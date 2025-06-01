@@ -125,63 +125,81 @@ struct WorkoutDataView: View {
                 .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: workoutManager.isWarningActive)
             }
             
-            // 시간
+            // 상단: 시간과 거리 (큰 글씨)
             HStack {
-                Text("시간")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text(timeString(from: workoutManager.elapsedTime))
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                VStack {
+                    Text(timeString(from: workoutManager.elapsedTime))
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    Text("시간")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                
+                VStack {
+                    Text(String(format: "%.2f", workoutManager.distance))
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.green)
+                    Text("km")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
             }
+            .padding(.bottom, 8)
             
-            // 페이스
+            // 중단: 페이스와 심박수
             HStack {
-                Text("페이스")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text(paceString(from: workoutManager.currentPace))
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.blue)
+                VStack {
+                    Text(paceString(from: workoutManager.currentPace))
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.blue)
+                    Text("페이스")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                
+                VStack {
+                    Text("\(Int(workoutManager.heartRate))")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.red)
+                    Text("bpm")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
             }
+            .padding(.bottom, 8)
             
-            // 심박수
+            // 하단: 케이던스와 칼로리
             HStack {
-                Text("심박수")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text("\(Int(workoutManager.heartRate)) bpm")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.red)
-            }
-            
-            // 거리
-            HStack {
-                Text("거리")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text(String(format: "%.2f km", workoutManager.distance))
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.green)
-            }
-            
-            // 케이던스 (경고 상태일 때 색상 변경)
-            HStack {
-                Text("케이던스")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text("\(Int(workoutManager.cadence)) spm")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(getCadenceColor())
+                VStack {
+                    Text("\(Int(workoutManager.cadence))")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(getCadenceColor())
+                    Text("spm")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                
+                VStack {
+                    Text("\(Int(workoutManager.currentCalories))")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.orange)
+                    Text("cal")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
             }
         }
         .padding(10)

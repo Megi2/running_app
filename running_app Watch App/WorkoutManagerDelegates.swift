@@ -6,7 +6,6 @@ import WatchConnectivity
 // MARK: - HealthKit Delegates
 extension WorkoutManager: HKWorkoutSessionDelegate {
     func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
-        // 워크아웃 세션 상태 변경 처리
         print("워크아웃 상태 변경: \(fromState.rawValue) -> \(toState.rawValue)")
     }
     
@@ -40,7 +39,6 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
                 case HKQuantityType.quantityType(forIdentifier: .stepCount):
                     let stepUnit = HKUnit.count()
                     if let stepValue = statistics?.sumQuantity()?.doubleValue(for: stepUnit) {
-                        // HealthKit의 stepCount는 검증용으로만 사용
                         print("HealthKit 걸음 수: \(Int(stepValue))")
                     }
                     
@@ -113,7 +111,7 @@ extension WorkoutManager: CLLocationManagerDelegate {
                         // 최종 합리적인 페이스 범위로 제한 (3분/km ~ 15분/km)
                         self.currentPace = max(180, min(900, self.currentPace))
                         
-                        print("🏃‍♂️ GPS 페이스: 거리=\(String(format: "%.1f", distance))m, 시간=\(String(format: "%.1f", timeInterval))초, 속도=\(String(format: "%.2f", speedMps))m/s (\(String(format: "%.2f", speedKmh))km/h), 페이스=\(String(format: "%.0f", self.currentPace))초/km (\(Int(self.currentPace/60)):\(String(format: "%02d", Int(self.currentPace) % 60))/km)")
+                        print("🏃‍♂️ GPS 페이스: \(String(format: "%.0f", self.currentPace))초/km, 칼로리: \(Int(self.currentCalories))cal")
                     }
                 } else {
                     print("⚠️ 비정상적인 속도: \(String(format: "%.2f", speedMps))m/s")
@@ -166,6 +164,7 @@ extension WorkoutManager: WCSessionDelegate {
             "heart_rate": heartRate,
             "cadence": cadence,
             "distance": distance,
+            "current_calories": currentCalories, // 칼로리 추가
             "recent_paces": recentPaces,
             "recent_cadences": recentCadences,
             "recent_heart_rates": recentHeartRates,
@@ -195,7 +194,8 @@ extension WorkoutManager: WCSessionDelegate {
             let data = try JSONEncoder().encode(workoutSummary)
             let message = [
                 "type": "workout_complete",
-                "workoutData": data
+                "workoutData": data,
+                "total_calories": currentCalories // 총 칼로리 추가
             ] as [String: Any]
             WCSession.default.sendMessage(message, replyHandler: nil) { error in
                 print("최종 데이터 전송 실패: \(error)")

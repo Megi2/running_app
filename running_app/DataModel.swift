@@ -52,6 +52,7 @@ struct RealtimeData {
     let heartRate: Double
     let cadence: Double
     let distance: Double
+    let currentCalories: Double // 칼로리 추가
     let recentPaces: [Double]
     let recentCadences: [Double]
     let recentHeartRates: [Double]

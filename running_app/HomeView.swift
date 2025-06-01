@@ -260,7 +260,7 @@ struct RealtimeMonitoringView: View {
     private func timeString(from timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval) / 60
         let seconds = Int(timeInterval) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+        return String(format: "%02d:\n%02d", minutes, seconds)
     }
     
     private func paceString(from pace: Double) -> String {
@@ -311,7 +311,7 @@ struct GoalProgressView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("10km 달리기 목표")
+            Text("달리기 목표")
                 .font(.headline)
                 .fontWeight(.bold)
             

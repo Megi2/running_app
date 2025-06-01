@@ -1,20 +1,98 @@
 import Foundation
 import WatchConnectivity
 
-// MARK: - 데이터 매니저
+// MARK: - 데이터 매니저 (Core Data만 사용)
 class RunningDataManager: NSObject, ObservableObject {
     @Published var workouts: [WorkoutSummary] = []
     @Published var bestDistance: Double = 0
     @Published var isReceivingRealtimeData = false
     @Published var currentRealtimeData: RealtimeData?
+    @Published var isLoading = false
     
-    // 로컬 분석 엔진 (Python 서버 대신 사용)
+    // Core Data 매니저와 로컬 분석 엔진
+    private let coreDataManager = CoreDataManager.shared
     private let analysisEngine = LocalAnalysisEngine()
     
     override init() {
         super.init()
         setupWatchConnectivity()
-        loadSampleData() // 개발용 샘플 데이터
+        loadData()
+    }
+    
+    // MARK: - 데이터 로딩
+    private func loadData() {
+        isLoading = true
+        
+        // Core Data에서 데이터 로드
+        let fetchedWorkouts = coreDataManager.fetchWorkouts()
+        
+        DispatchQueue.main.async {
+            self.workouts = fetchedWorkouts
+            self.updateBestDistance()
+            self.isLoading = false
+            
+            print("✅ 데이터 로딩 완료: \(self.workouts.count)개 워크아웃")
+        }
+    }
+    
+    // MARK: - 새 워크아웃 저장
+    private func saveNewWorkout(_ workout: WorkoutSummary) {
+        // Core Data에 저장
+        coreDataManager.saveWorkout(workout)
+        
+        // 메모리 배열 업데이트
+        DispatchQueue.main.async {
+            self.workouts.insert(workout, at: 0)
+            self.updateBestDistance()
+        }
+        
+        print("✅ 새 워크아웃 저장 완료: \(String(format: "%.2f", workout.distance))km")
+    }
+    
+    // MARK: - 워크아웃 삭제
+    func deleteWorkout(_ workout: WorkoutSummary) {
+        coreDataManager.deleteWorkout(id: workout.id)
+        
+        DispatchQueue.main.async {
+            self.workouts.removeAll { $0.id == workout.id }
+            self.updateBestDistance()
+        }
+    }
+    
+    // MARK: - 모든 데이터 삭제
+    func deleteAllWorkouts() {
+        coreDataManager.deleteAllWorkouts()
+        
+        DispatchQueue.main.async {
+            self.workouts.removeAll()
+            self.bestDistance = 0
+        }
+    }
+    
+    // MARK: - 데이터 새로고침
+    func refreshData() {
+        loadData()
+    }
+    
+    // MARK: - 최고 기록 업데이트
+    private func updateBestDistance() {
+        bestDistance = workouts.map { $0.distance }.max() ?? 0
+    }
+    
+    // MARK: - 데이터 내보내기
+    func exportData() -> Data? {
+        let exportData = [
+            "workouts": workouts,
+            "exportDate": Date(),
+            "appVersion": "1.0.0"
+        ] as [String: Any]
+        
+        return try? JSONSerialization.data(withJSONObject: exportData, options: .prettyPrinted)
+    }
+    
+    // MARK: - 데이터 통계
+    func getDataStats() -> (workoutCount: Int, totalDistance: Double, oldestDate: Date?) {
+        return coreDataManager.getDataStats()
     }
     
     private func setupWatchConnectivity() {
@@ -22,40 +100,6 @@ class RunningDataManager: NSObject, ObservableObject {
             WCSession.default.delegate = self
             WCSession.default.activate()
         }
-    }
-    
-    private func loadSampleData() {
-        // 개발용 샘플 데이터 생성
-        let sampleWorkout = WorkoutSummary(
-            date: Date().addingTimeInterval(-86400), // 어제
-            duration: 1800, // 30분
-            distance: 5.2,
-            averageHeartRate: 150,
-            averagePace: 350, // 5:50/km
-            averageCadence: 175,
-            dataPoints: generateSampleDataPoints()
-        )
-        
-        workouts.append(sampleWorkout)
-        bestDistance = workouts.map { $0.distance }.max() ?? 0
-    }
-    
-    private func generateSampleDataPoints() -> [RunningDataPoint] {
-        var points: [RunningDataPoint] = []
-        let startTime = Date().addingTimeInterval(-86400)
-        
-        for i in 0..<1800 { // 30분간 매초 데이터
-            let point = RunningDataPoint(
-                timestamp: startTime.addingTimeInterval(TimeInterval(i)),
-                pace: 350 + Double.random(in: -20...20), // 5:50 ± 20초
-                heartRate: 150 + Double.random(in: -10...10),
-                cadence: 175 + Double.random(in: -5...5),
-                distance: Double(i) * 0.0029 // 대략적인 거리 계산
-            )
-            points.append(point)
-        }
-        
-        return points
     }
     
     // MARK: - 실시간 분석 (로컬에서 수행)
@@ -232,8 +276,6 @@ class RunningDataManager: NSObject, ObservableObject {
     }
 }
 
-
-
 // MARK: - Watch Connectivity
 extension RunningDataManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
@@ -275,6 +317,7 @@ extension RunningDataManager: WCSessionDelegate {
             heartRate: message["heart_rate"] as? Double ?? 0,
             cadence: message["cadence"] as? Double ?? 0,
             distance: message["distance"] as? Double ?? 0,
+            currentCalories: message["current_calories"] as? Double ?? 0,
             recentPaces: message["recent_paces"] as? [Double] ?? [],
             recentCadences: message["recent_cadences"] as? [Double] ?? [],
             recentHeartRates: message["recent_heart_rates"] as? [Double] ?? [],
@@ -285,7 +328,7 @@ extension RunningDataManager: WCSessionDelegate {
         self.currentRealtimeData = realtimeData
         self.isReceivingRealtimeData = true
         
-        // 로컬에서 실시간 분석 수행 (서버 대신)
+        // 로컬에서 실시간 분석 수행
         performLocalAnalysis(realtimeData)
     }
     
@@ -302,8 +345,11 @@ extension RunningDataManager: WCSessionDelegate {
     private func handleLegacyWorkoutData(_ workoutData: Data) {
         do {
             let workout = try JSONDecoder().decode(WorkoutSummary.self, from: workoutData)
-            self.workouts.insert(workout, at: 0) // 최신 데이터를 맨 앞에 추가
-            self.bestDistance = max(self.bestDistance, workout.distance)
+            
+            // Core Data에 저장
+            saveNewWorkout(workout)
+            
+            print("✅ Watch에서 새 워크아웃 수신 및 저장 완료")
         } catch {
             print("워크아웃 데이터 디코딩 실패: \(error)")
         }

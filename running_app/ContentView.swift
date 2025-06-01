@@ -2,7 +2,8 @@ import SwiftUI
 import Charts
 
 struct ContentView: View {
-    @StateObject private var dataManager = RunningDataManager()
+    @EnvironmentObject var dataManager: RunningDataManager
+    @EnvironmentObject var profileManager: UserProfileManager
     
     var body: some View {
         NavigationView {
@@ -33,6 +34,8 @@ struct ContentView: View {
                 
                 // 설정 화면
                 SettingsView()
+                    .environmentObject(dataManager)
+                    .environmentObject(profileManager)
                     .tabItem {
                         Image(systemName: "gear")
                         Text("설정")

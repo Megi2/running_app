@@ -12,6 +12,7 @@ class WorkoutManager: NSObject, ObservableObject {
     @Published var heartRate: Double = 0
     @Published var currentPace: Double = 0
     @Published var cadence: Double = 0
+    @Published var currentCalories: Double = 0  // 새로 추가!
     @Published var isWarningActive = false
     @Published var warningMessage = ""
     
@@ -50,11 +51,66 @@ class WorkoutManager: NSObject, ObservableObject {
     internal var lastAccelerationMagnitude: Double = 0
     internal var stepDetectionThreshold: Double = 1.2
     
+    // 칼로리 계산을 위한 사용자 정보 (기본값)
+    private var userWeight: Double = 70.0  // kg
+    private var userGender: String = "male"
+    private var userAge: Int = 30
+    
     override init() {
         super.init()
         setupLocationManager()
         requestHealthKitPermissions()
         setupWatchConnectivity()
+        loadUserProfile()
+    }
+    
+    // MARK: - 사용자 프로필 로드
+    private func loadUserProfile() {
+        // UserDefaults에서 사용자 정보 로드 (iPhone에서 동기화)
+        if let profileData = UserDefaults.standard.data(forKey: "UserProfile"),
+           let profile = try? JSONDecoder().decode(UserProfileForWatch.self, from: profileData) {
+            userWeight = profile.weight
+            userGender = profile.gender
+            userAge = profile.age
+            print("✅ Watch에서 사용자 프로필 로드: \(userWeight)kg, \(userAge)세, \(userGender)")
+        } else {
+            print("⚠️ 사용자 프로필이 없음. 기본값 사용: \(userWeight)kg, \(userAge)세, \(userGender)")
+        }
+    }
+    
+    // MARK: - 칼로리 계산 메서드
+    private func calculateCaloriesForPace(_ pace: Double) -> Double {
+        guard pace > 0 else { return 0 }
+        
+        // 페이스를 속도(km/h)로 변환
+        let speedKmh = 3600 / pace
+        
+        // 속도에 따른 METs 값
+        let mets: Double
+        switch speedKmh {
+        case 0..<4: mets = 4.0
+        case 4..<6: mets = 6.0
+        case 6..<8: mets = 8.3
+        case 8..<9: mets = 9.8
+        case 9..<10: mets = 10.5
+        case 10..<11: mets = 11.0
+        case 11..<12: mets = 11.8
+        case 12..<13: mets = 12.8
+        case 13..<14: mets = 13.8
+        case 14..<16: mets = 15.3
+        default: mets = 18.0
+        }
+        
+        // 분당 칼로리 = METs × 몸무게(kg) × (1/60)시간
+        return mets * userWeight / 60
+    }
+    
+    private func updateCalories() {
+        if currentPace > 0 {
+            let caloriesPerMinute = calculateCaloriesForPace(currentPace)
+            // 1초당 칼로리 증가량
+            currentCalories += caloriesPerMinute / 60
+        }
     }
     
     func startWorkout() {
@@ -77,11 +133,11 @@ class WorkoutManager: NSObject, ObservableObject {
                     if success {
                         self.isActive = true
                         self.startDate = Date()
+                        self.currentCalories = 0  // 칼로리 초기화
                         self.startTimer()
                         self.startDataTransmissionTimer()
                         self.startRealTimeAnalysis()
                         self.startCadenceTracking()
-                        // Apple Watch에서는 HKWorkoutSession이 자동으로 위치 서비스 시작
                         print("📍 HealthKit 워크아웃을 통한 위치 서비스 시작됨")
                     }
                 }
@@ -102,8 +158,8 @@ class WorkoutManager: NSObject, ObservableObject {
                         self.stopDataTransmissionTimer()
                         self.stopRealTimeAnalysis()
                         self.stopCadenceTracking()
-                        // Apple Watch에서는 HKWorkoutSession 종료 시 자동으로 위치 서비스 중지
                         print("📍 HealthKit 워크아웃 종료 - 위치 서비스 중지됨")
+                        print("🔥 총 소모 칼로리: \(Int(self.currentCalories)) cal")
                         self.sendFinalDataToPhone()
                         self.resetData()
                     }
@@ -119,6 +175,9 @@ class WorkoutManager: NSObject, ObservableObject {
             
             // GPS 기반 페이스 계산
             self.calculateCurrentPace()
+            
+            // 칼로리 업데이트
+            self.updateCalories()
             
             // 매초 데이터 기록
             let dataPoint = RunningDataPoint(
@@ -169,9 +228,7 @@ class WorkoutManager: NSObject, ObservableObject {
                             self.currentPace = newPace
                         }
                         
-                        print("🏃‍♂️ 페이스 계산: 거리변화=\(String(format: "%.3f", distanceInterval))km, 시간=\(String(format: "%.1f", timeInterval))초, 속도=\(String(format: "%.2f", speedKmh))km/h, 페이스=\(String(format: "%.0f", self.currentPace))초/km")
-                    } else {
-                        print("⚠️ 비정상적인 페이스: \(String(format: "%.0f", newPace))초/km (속도: \(String(format: "%.2f", speedKmh))km/h)")
+                        print("🏃‍♂️ 페이스: \(String(format: "%.0f", self.currentPace))초/km, 칼로리: \(Int(self.currentCalories))cal")
                     }
                 }
             }
@@ -302,6 +359,7 @@ class WorkoutManager: NSObject, ObservableObject {
         heartRate = 0
         currentPace = 0
         cadence = 0
+        currentCalories = 0  // 칼로리 초기화
         startDate = nil
         lastLocation = nil
         runningData.removeAll()
@@ -327,7 +385,6 @@ class WorkoutManager: NSObject, ObservableObject {
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.distanceFilter = 5.0 // 5m마다 업데이트
         
-        // Apple Watch에서는 워크아웃 시작 시 자동으로 위치 권한 요청됨
         let authStatus = locationManager.authorizationStatus
         print("📍 현재 위치 권한 상태: \(authStatus.rawValue)")
         
@@ -370,4 +427,11 @@ class WorkoutManager: NSObject, ObservableObject {
             }
         }
     }
+}
+
+// MARK: - Watch용 간단한 사용자 프로필 구조체
+struct UserProfileForWatch: Codable {
+    let weight: Double
+    let gender: String
+    let age: Int
 }
