@@ -161,6 +161,31 @@ enum TrendDirection {
     }
 }
 
+// MARK: - HomeView용 헬퍼 구조체들 (새로 추가)
+struct NextGoalInfo {
+    let title: String
+    let targetDistance: Double
+    let color: Color
+}
+
+struct WorkoutRecommendation {
+    let title: String
+    let description: String
+    let icon: String
+    let color: Color
+    let targetDistance: Double?
+    let targetPace: Double?
+    
+    init(title: String, description: String, icon: String, color: Color, targetDistance: Double? = nil, targetPace: Double? = nil) {
+        self.title = title
+        self.description = description
+        self.icon = icon
+        self.color = color
+        self.targetDistance = targetDistance
+        self.targetPace = targetPace
+    }
+}
+
 // MARK: - 헬퍼 함수들
 func zip3<A, B, C>(_ a: [A], _ b: [B], _ c: [C]) -> [(A, B, C)] {
     let minCount = min(a.count, b.count, c.count)
