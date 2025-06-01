@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		6034FE8A2DE49326006367C3 /* running_app Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 6034FE892DE49326006367C3 /* running_app Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		60D823B22DEC252C002B05DD /* RunningDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 60D823B02DEC252C002B05DD /* RunningDataModel.xcdatamodeld */; };
-		60D823F02DEC2CF0002B05DD /* WorkoutEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D823EF2DEC2CF0002B05DD /* WorkoutEntity.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,15 +71,9 @@
 		6034FE982DE49327006367C3 /* running_app Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "running_app Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6034FEA22DE49327006367C3 /* running_app Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "running_app Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		60D823B12DEC252C002B05DD /* RunningDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = RunningDataModel.xcdatamodel; sourceTree = "<group>"; };
-		60D823EF2DEC2CF0002B05DD /* WorkoutEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutEntity.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		6034FE682DE49323006367C3 /* running_app */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = running_app;
-			sourceTree = "<group>";
-		};
 		6034FE762DE49326006367C3 /* running_appTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = running_appTests;
@@ -104,6 +97,11 @@
 		6034FEA52DE49327006367C3 /* running_app Watch AppUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "running_app Watch AppUITests";
+			sourceTree = "<group>";
+		};
+		60D826792DED77D5002B05DD /* running_app */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = running_app;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -157,9 +155,8 @@
 		6034FE5D2DE49322006367C3 = {
 			isa = PBXGroup;
 			children = (
-				60D823EF2DEC2CF0002B05DD /* WorkoutEntity.swift */,
+				60D826792DED77D5002B05DD /* running_app */,
 				60D823B02DEC252C002B05DD /* RunningDataModel.xcdatamodeld */,
-				6034FE682DE49323006367C3 /* running_app */,
 				6034FE762DE49326006367C3 /* running_appTests */,
 				6034FE802DE49326006367C3 /* running_appUITests */,
 				6034FE8D2DE49326006367C3 /* running_app Watch App */,
@@ -200,7 +197,7 @@
 				6034FE8C2DE49326006367C3 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				6034FE682DE49323006367C3 /* running_app */,
+				60D826792DED77D5002B05DD /* running_app */,
 			);
 			name = running_app;
 			packageProductDependencies = (
@@ -431,7 +428,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				60D823F02DEC2CF0002B05DD /* WorkoutEntity.swift in Sources */,
 				60D823B22DEC252C002B05DD /* RunningDataModel.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

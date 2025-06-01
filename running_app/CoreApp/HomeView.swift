@@ -62,6 +62,12 @@ struct CurrentGoalProgressView: View {
         if let goals = assessmentManager.recommendedGoals,
            let tracker = assessmentManager.progressTracker {
             
+<<<<<<< HEAD:running_app/HomeView.swift
+=======
+            // 다음 목표 계산
+            let nextGoal = getNextGoal(goals: goals, tracker: tracker)
+            
+>>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Text("현재 목표")
@@ -78,9 +84,12 @@ struct CurrentGoalProgressView: View {
                     .foregroundColor(.blue)
                 }
                 
+<<<<<<< HEAD:running_app/HomeView.swift
                 // 다음 목표 (미달성된 가장 가까운 목표)
                 let nextGoal = getNextGoal(goals: goals, tracker: tracker)
                 
+=======
+>>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
                 VStack(spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -143,7 +152,10 @@ struct CurrentGoalProgressView: View {
     }
 }
 
+<<<<<<< HEAD:running_app/HomeView.swift
 
+=======
+>>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
 // MARK: - 기본 목표 진행상황 (평가 미완료)
 struct BasicGoalProgressView: View {
     @EnvironmentObject var dataManager: RunningDataManager
@@ -202,8 +214,11 @@ struct TodaysWorkoutRecommendationView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
+<<<<<<< HEAD:running_app/HomeView.swift
                 Image(systemName: "brain.head.profile")
                     .foregroundColor(.purple)
+=======
+>>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
                 Text("오늘의 추천 운동")
                     .font(.headline)
                     .fontWeight(.bold)
@@ -407,7 +422,11 @@ struct MotivationalMessageView: View {
     }
 }
 
+<<<<<<< HEAD:running_app/HomeView.swift
 // MARK: - 기존 컴포넌트들 (간소화)
+=======
+// MARK: - 기존 컴포넌트들
+>>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
 struct MetricView: View {
     let title: String
     let value: String
@@ -530,9 +549,13 @@ struct RecentWorkoutView: View {
     }
 }
 
+<<<<<<< HEAD:running_app/HomeView.swift
 // 기존 RealtimeMonitoringView 등은 그대로 유지
 
 // MARK: - 실시간 모니터링 카드 (기존 HomeView에 있던 내용)
+=======
+// MARK: - 실시간 모니터링 카드
+>>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
 struct RealtimeMonitoringCardView: View {
     @EnvironmentObject var dataManager: RunningDataManager
     @State private var isExpanded = true
@@ -540,11 +563,7 @@ struct RealtimeMonitoringCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                Image(systemName: "brain.head.profile")
-                    .foregroundColor(.purple)
-                    .font(.title2)
-                
-                Text("AI 실시간 분석")
+                Text("실시간 분석")
                     .font(.headline)
                     .fontWeight(.bold)
                 
@@ -693,7 +712,7 @@ struct RealtimeMonitoringCardView: View {
     private func timeString(from timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval) / 60
         let seconds = Int(timeInterval) % 60
-        return String(format: "%02d:\n%02d", minutes, seconds)
+        return String(format: "%02d:%02d", minutes, seconds)
     }
     
     private func paceString(from pace: Double) -> String {

@@ -140,10 +140,13 @@ class RunningDataManager: NSObject, ObservableObject {
         
         let totalDistance = thisWeekWorkouts.map { $0.distance }.reduce(0, +)
         let workoutCount = thisWeekWorkouts.count
-        let efficiencies = thisWeekWorkouts.map { workout in
+        
+        let efficiencies = thisWeekWorkouts.compactMap { workout -> Double? in
+            guard workout.averageHeartRate > 0 && workout.averagePace > 0 else { return nil }
             let speed = 3600 / workout.averagePace
             return speed / workout.averageHeartRate
         }
+        
         let averageEfficiency = efficiencies.isEmpty ? 0 : efficiencies.reduce(0, +) / Double(efficiencies.count)
         
         return WeeklyStats(

@@ -67,10 +67,34 @@ struct EfficiencyMetrics {
     let optimalCadenceRange: (Double, Double)
 }
 
-struct WeeklyStats {
-    let totalDistance: Double
-    let workoutCount: Int
-    let averageEfficiency: Double
+struct WeeklyStats: Codable {
+    var totalDistance: Double
+    var workoutCount: Int
+    var averageEfficiency: Double
+    
+    // 기본 이니셜라이저
+    init(totalDistance: Double = 0, workoutCount: Int = 0, averageEfficiency: Double = 0) {
+        self.totalDistance = totalDistance
+        self.workoutCount = workoutCount
+        self.averageEfficiency = averageEfficiency
+    }
+    
+    // 값을 업데이트하는 메서드
+    mutating func addWorkout(distance: Double, efficiency: Double) {
+        totalDistance += distance
+        workoutCount += 1
+        
+        // 평균 효율성 재계산
+        let totalEfficiency = averageEfficiency * Double(workoutCount - 1) + efficiency
+        averageEfficiency = totalEfficiency / Double(workoutCount)
+    }
+    
+    // 초기화
+    mutating func reset() {
+        totalDistance = 0
+        workoutCount = 0
+        averageEfficiency = 0
+    }
 }
 
 struct LongTermTrends {

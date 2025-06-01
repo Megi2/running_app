@@ -150,11 +150,88 @@ extension WorkoutManager: CLLocationManagerDelegate {
 // MARK: - Watch Connectivity Delegate
 extension WorkoutManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        print("Watch Connectivity 활성화 완료")
+        print("Watch Connectivity 활성화 완료: \(activationState.rawValue)")
+        if let error = error {
+            print("WCSession 활성화 에러: \(error.localizedDescription)")
+        }
     }
     
+    // MARK: - 메시지 수신 처리
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        print("📱 iPhone에서 메시지 수신: \(message)")
+        handleReceivedMessage(message)
+    }
+    
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
+        print("📱 iPhone에서 응답 요청 메시지 수신: \(message)")
+        handleReceivedMessage(message)
+        
+        // 응답 전송
+        let reply: [String: Any] = [
+            "status": "received",
+            "timestamp": Date().timeIntervalSince1970
+        ]
+        replyHandler(reply)
+    }
+    
+    // MARK: - 메시지 처리
+    private func handleReceivedMessage(_ message: [String: Any]) {
+        DispatchQueue.main.async {
+            if let command = message["command"] as? String {
+                switch command {
+                case "start_assessment":
+                    if let targetDistance = message["targetDistance"] as? Double,
+                       let isAssessment = message["isAssessment"] as? Bool {
+                        print("🎯 평가 모드 시작: \(targetDistance)km, 평가: \(isAssessment)")
+                        // 평가 모드 플래그 설정
+                        // 실제 구현에서는 WorkoutManager에 평가 모드 상태를 추가
+                    }
+                    
+                case "stop_workout":
+                    if self.isActive {
+                        self.endWorkout()
+                    }
+                    
+                case "get_status":
+                    // 현재 상태 전송
+                    self.sendCurrentStatus()
+                    
+                default:
+                    print("⚠️ 알 수 없는 명령: \(command)")
+                }
+            }
+        }
+    }
+    
+    // MARK: - 현재 상태 전송
+    private func sendCurrentStatus() {
+        guard WCSession.default.isReachable else {
+            print("📱 iPhone이 연결되지 않음")
+            return
+        }
+        
+        let statusMessage: [String: Any] = [
+            "type": "status_update",
+            "isActive": isActive,
+            "elapsedTime": elapsedTime,
+            "distance": distance,
+            "currentPace": currentPace,
+            "heartRate": heartRate,
+            "cadence": cadence,
+            "currentCalories": currentCalories
+        ]
+        
+        WCSession.default.sendMessage(statusMessage, replyHandler: nil) { error in
+            print("상태 전송 실패: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - 실시간 데이터 전송
     func sendRealtimeDataToPhone() {
-        guard WCSession.default.isReachable else { return }
+        guard WCSession.default.isReachable else {
+            print("📱 iPhone이 연결되지 않음 - 실시간 데이터 전송 건너뛰기")
+            return
+        }
         
         let realtimeData: [String: Any] = [
             "type": "realtime_data",
@@ -164,7 +241,7 @@ extension WorkoutManager: WCSessionDelegate {
             "heart_rate": heartRate,
             "cadence": cadence,
             "distance": distance,
-            "current_calories": currentCalories, // 칼로리 추가
+            "current_calories": currentCalories,
             "recent_paces": recentPaces,
             "recent_cadences": recentCadences,
             "recent_heart_rates": recentHeartRates,
@@ -172,13 +249,19 @@ extension WorkoutManager: WCSessionDelegate {
             "warning_message": warningMessage
         ]
         
-        WCSession.default.sendMessage(realtimeData, replyHandler: nil) { error in
-            print("실시간 데이터 전송 실패: \(error)")
+        WCSession.default.sendMessage(realtimeData, replyHandler: { response in
+            print("📱 실시간 데이터 전송 성공, 응답: \(response)")
+        }) { error in
+            print("📱 실시간 데이터 전송 실패: \(error.localizedDescription)")
         }
     }
     
+    // MARK: - 최종 워크아웃 데이터 전송
     func sendFinalDataToPhone() {
-        guard WCSession.default.isReachable else { return }
+        guard WCSession.default.isReachable else {
+            print("📱 iPhone이 연결되지 않음 - 최종 데이터 저장은 나중에 동기화됨")
+            return
+        }
         
         let workoutSummary = WorkoutSummary(
             date: Date(),
@@ -192,16 +275,56 @@ extension WorkoutManager: WCSessionDelegate {
         
         do {
             let data = try JSONEncoder().encode(workoutSummary)
-            let message = [
+            let message: [String: Any] = [
                 "type": "workout_complete",
                 "workoutData": data,
-                "total_calories": currentCalories // 총 칼로리 추가
-            ] as [String: Any]
-            WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                print("최종 데이터 전송 실패: \(error)")
+                "total_calories": currentCalories,
+                "timestamp": Date().timeIntervalSince1970
+            ]
+            
+            WCSession.default.sendMessage(message, replyHandler: { response in
+                print("📱 최종 워크아웃 데이터 전송 성공: \(response)")
+            }) { error in
+                print("📱 최종 데이터 전송 실패: \(error.localizedDescription)")
+                // 실패 시 로컬에 임시 저장
+                self.saveWorkoutLocally(workoutSummary)
             }
         } catch {
-            print("데이터 인코딩 실패: \(error)")
+            print("워크아웃 데이터 인코딩 실패: \(error)")
+        }
+    }
+    
+    // MARK: - 로컬 임시 저장 (나중에 동기화용)
+    private func saveWorkoutLocally(_ workout: WorkoutSummary) {
+        // UserDefaults에 임시 저장
+        do {
+            let data = try JSONEncoder().encode(workout)
+            let key = "pending_workout_\(Date().timeIntervalSince1970)"
+            UserDefaults.standard.set(data, forKey: key)
+            print("💾 워크아웃 로컬 임시 저장: \(key)")
+        } catch {
+            print("로컬 저장 실패: \(error)")
+        }
+    }
+    
+    // MARK: - 에러 처리 메서드들
+    func session(_ session: WCSession, didReceiveMessageData messageData: Data) {
+        print("📱 iPhone에서 데이터 메시지 수신: \(messageData.count)bytes")
+    }
+    
+    func session(_ session: WCSession, didReceiveMessageData messageData: Data, replyHandler: @escaping (Data) -> Void) {
+        print("📱 iPhone에서 응답 요청 데이터 메시지 수신: \(messageData.count)bytes")
+        let replyData = "received".data(using: .utf8) ?? Data()
+        replyHandler(replyData)
+    }
+    
+    // MARK: - 연결 상태 변화 처리
+    func sessionReachabilityDidChange(_ session: WCSession) {
+        print("Watch 연결 상태 변경: \(session.isReachable)")
+        if session.isReachable {
+            print("✅ iPhone과 연결됨 - 실시간 데이터 전송 가능")
+        } else {
+            print("❌ iPhone 연결 끊어짐 - 로컬 저장 모드")
         }
     }
 }
