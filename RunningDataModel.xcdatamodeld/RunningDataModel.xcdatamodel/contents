@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24F74" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="WorkoutEntity" representedClassName="WorkoutEntity" syncable="YES">
+        <attribute name="averageCadence" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="averageHeartRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="averagePace" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="dataPointsData" optional="YES" attributeType="Binary"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="distance" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="duration" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+    </entity>
+</model>
