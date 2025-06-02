@@ -2,15 +2,7 @@
 //  AssessmentSummaryCard.swift
 //  running_app
 //
-//  Created by 전진하 on 6/1/25.
-//
-
-
-//
-//  AssessmentCardsView.swift
-//  running_app
-//
-//  Created by AI Assistant on 6/1/25.
+//  Zone 2 평가 결과 요약 카드들 (수정됨)
 //
 
 import SwiftUI
@@ -74,7 +66,7 @@ struct AssessmentMetric: View {
 }
 
 struct RecommendedGoalsCard: View {
-    let goals: RunningGoals
+    let goals: Zone2Goals  // RunningGoals → Zone2Goals로 변경
     
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {

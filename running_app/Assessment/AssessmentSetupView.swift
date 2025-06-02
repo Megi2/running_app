@@ -1,18 +1,3 @@
-//
-//  AssessmentSetupView.swift
-//  running_app
-//
-//  Created by 전진하 on 6/1/25.
-//
-
-
-//
-//  AssessmentSetupView.swift
-//  running_app
-//
-//  Created by AI Assistant on 6/1/25.
-//
-
 import SwiftUI
 
 struct AssessmentSetupView: View {

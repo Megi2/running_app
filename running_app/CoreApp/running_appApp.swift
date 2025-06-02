@@ -1,3 +1,10 @@
+//
+//  running_appApp.swift
+//  running_app
+//
+//  메인 앱 진입점 (타입 에러 수정됨)
+//
+
 import SwiftUI
 import WatchConnectivity
 
@@ -32,12 +39,16 @@ struct running_appApp: App {
                     syncProfileToWatch()
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartAssessmentRun"))) { notification in
-                // Watch로 평가 모드 시작 신호 전송
-                if let userInfo = notification.userInfo,
-                   let targetDistance = userInfo["targetDistance"] as? Double,
-                   let isAssessment = userInfo["isAssessment"] as? Bool {
-                    startAssessmentMode(targetDistance: targetDistance, isAssessment: isAssessment)
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartZone2Assessment"))) { notification in
+                // Zone 2 평가 시작 신호 처리
+                if let message = notification.object as? [String: Any] {
+                    startZone2AssessmentMode(message: message)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("Zone2AssessmentCompleted"))) { notification in
+                // Zone 2 평가 완료 처리
+                if let workout = notification.object as? WorkoutSummary {
+                    assessmentManager.processAssessmentWorkout(workout)
                 }
             }
         }
@@ -57,21 +68,13 @@ struct running_appApp: App {
         }
     }
     
-    private func startAssessmentMode(targetDistance: Double, isAssessment: Bool) {
-        // Watch Connectivity를 통해 평가 모드 시작 신호 전송
-        // 실제 구현에서는 WCSession을 사용
-        print("📱 평가 모드 시작 신호 전송: \(targetDistance)km, 평가모드: \(isAssessment)")
+    private func startZone2AssessmentMode(message: [String: Any]) {
+        // Apple Watch로 Zone 2 평가 모드 시작 신호 전송
+        print("📱 Zone 2 평가 모드 시작 신호 전송")
         
-        // WCSession을 통한 실제 구현
         if WCSession.isSupported() && WCSession.default.isReachable {
-            let message = [
-                "command": "start_assessment",
-                "targetDistance": targetDistance,
-                "isAssessment": isAssessment
-            ] as [String: Any]
-            
             WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                print("평가 모드 시작 신호 전송 실패: \(error)")
+                print("Zone 2 평가 모드 시작 신호 전송 실패: \(error)")
             }
         }
     }
@@ -89,9 +92,9 @@ struct AssessmentWelcomeScreenView: View {
                 Spacer()
                 
                 VStack(spacing: 20) {
-                    Image(systemName: "figure.run.circle.fill")
+                    Image(systemName: "heart.circle.fill")
                         .font(.system(size: 100))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.red)
                     
                     VStack(spacing: 12) {
                         Text("환영합니다!")
@@ -107,26 +110,26 @@ struct AssessmentWelcomeScreenView: View {
                 
                 VStack(spacing: 20) {
                     WelcomeFeature(
-                        icon: "target",
-                        title: "개인 맞춤 목표",
-                        description: "1km 평가로 당신에게 딱 맞는 목표를 설정해드려요"
+                        icon: "heart.fill",
+                        title: "Zone 2 기반 평가",
+                        description: "편안한 심박수로 최대한 오래 달려보세요"
                     )
                     
                     WelcomeFeature(
                         icon: "chart.line.uptrend.xyaxis",
-                        title: "성장 추적",
-                        description: "실력 향상에 따라 목표가 자동으로 업데이트돼요"
+                        title: "정량적 목표 설정",
+                        description: "측정된 능력에 기반한 과학적 목표"
                     )
                     
                     WelcomeFeature(
                         icon: "brain.head.profile",
-                        title: "AI 코칭",
-                        description: "실시간 분석으로 더 효과적인 운동을 도와드려요"
+                        title: "AI 실시간 분석",
+                        description: "운동 중 효율성과 페이스 안정성 모니터링"
                     )
                 }
                 
                 VStack(spacing: 16) {
-                    Button("체력 평가 시작하기") {
+                    Button("Zone 2 체력 평가 시작하기") {
                         showingAssessmentSetup = true
                     }
                     .buttonStyle(.borderedProminent)
@@ -162,9 +165,9 @@ struct WelcomeFeature: View {
         HStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundColor(.blue)
+                .foregroundColor(.red)
                 .frame(width: 40, height: 40)
-                .background(Color.blue.opacity(0.1))
+                .background(Color.red.opacity(0.1))
                 .cornerRadius(10)
             
             VStack(alignment: .leading, spacing: 4) {

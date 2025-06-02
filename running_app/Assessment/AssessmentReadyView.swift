@@ -2,28 +2,26 @@
 //  AssessmentReadyView.swift
 //  running_app
 //
-//  Created by 전진하 on 6/1/25.
-//
-
-
-//
-//  AssessmentReadyView.swift
-//  running_app
-//
-//  Created by AI Assistant on 6/1/25.
+//  Zone 2 평가 준비 화면
 //
 
 import SwiftUI
 
-// MARK: - 준비 완료 화면
 struct AssessmentReadyView: View {
     let onStartAssessment: () -> Void
     @State private var isReady = false
+    @StateObject private var profileManager = UserProfileManager.shared
+    
+    var zone2HeartRateRange: ClosedRange<Double> {
+        let profile = profileManager.userProfile
+        let heartRateZones = profile.heartRateZones
+        return heartRateZones.zone2
+    }
     
     var body: some View {
         VStack(spacing: 30) {
             VStack(spacing: 12) {
-                Text("평가 시작 준비")
+                Text("Zone 2 평가 시작 준비")
                     .font(.title2)
                     .fontWeight(.bold)
                 
@@ -34,54 +32,93 @@ struct AssessmentReadyView: View {
             }
             .padding(.top)
             
+            // Zone 2 범위 리마인더
+            VStack(spacing: 12) {
+                Text("목표 심박수 범위")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                HStack {
+                    Text("\(Int(zone2HeartRateRange.lowerBound))")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.red)
+                    
+                    Text("~")
+                        .font(.title)
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(Int(zone2HeartRateRange.upperBound))")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.red)
+                    
+                    Text("bpm")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+                
+                Text("이 범위를 유지하면서 최대한 오래 달려주세요")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .background(Color.red.opacity(0.1))
+            .cornerRadius(12)
+            
             VStack(spacing: 20) {
-                ReadyCheckItem(
+                Zone2ReadyCheckItem(
                     icon: "checkmark.circle.fill",
                     title: "Apple Watch 착용 완료",
+                    subtitle: "심박수 모니터링 준비됨",
                     isChecked: true
                 )
                 
-                ReadyCheckItem(
+                Zone2ReadyCheckItem(
                     icon: "checkmark.circle.fill",
                     title: "야외 환경 (GPS 수신 가능)",
+                    subtitle: "거리 측정을 위한 GPS 필요",
                     isChecked: true
                 )
                 
-                ReadyCheckItem(
+                Zone2ReadyCheckItem(
                     icon: "checkmark.circle.fill",
-                    title: "편안한 운동복 착용",
+                    title: "편안한 운동복과 신발",
+                    subtitle: "오래 달릴 수 있는 편안한 장비",
                     isChecked: true
                 )
                 
-                ReadyCheckItem(
+                Zone2ReadyCheckItem(
                     icon: "checkmark.circle.fill",
-                    title: "충분한 수분 섭취",
+                    title: "충분한 수분과 에너지",
+                    subtitle: "오래 달리기 위한 준비",
                     isChecked: true
                 )
             }
             
             VStack(spacing: 16) {
-                Toggle("준비가 모두 완료되었습니다", isOn: $isReady)
-                    .toggleStyle(SwitchToggleStyle(tint: .green))
+                Toggle("Zone 2 평가 준비가 모두 완료되었습니다", isOn: $isReady)
+                    .toggleStyle(SwitchToggleStyle(tint: .red))
                 
                 if isReady {
                     Button(action: onStartAssessment) {
                         HStack {
-                            Image(systemName: "play.circle.fill")
-                            Text("1km 평가 달리기 시작")
+                            Image(systemName: "heart.circle.fill")
+                            Text("Zone 2 최대 지속력 평가 시작")
                         }
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.green)
+                        .background(Color.red)
                         .cornerRadius(12)
                     }
                     .transition(.scale.combined(with: .opacity))
                 }
             }
             .padding()
-            .background(Color.green.opacity(0.1))
+            .background(Color.red.opacity(0.1))
             .cornerRadius(12)
             
             Spacer()
@@ -91,9 +128,10 @@ struct AssessmentReadyView: View {
     }
 }
 
-struct ReadyCheckItem: View {
+struct Zone2ReadyCheckItem: View {
     let icon: String
     let title: String
+    let subtitle: String
     let isChecked: Bool
     
     var body: some View {
@@ -102,11 +140,19 @@ struct ReadyCheckItem: View {
                 .font(.title3)
                 .foregroundColor(isChecked ? .green : .gray)
             
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(isChecked ? .primary : .secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(isChecked ? .primary : .secondary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
             
             Spacer()
         }
     }
 }
+

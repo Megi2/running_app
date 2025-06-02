@@ -123,6 +123,31 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                #if DEBUG
+                Section("개발자 옵션") {
+                    Button("샘플 데이터 로딩") {
+                        SampleDataGenerator.shared.loadSampleData()
+                        // UI 새로고침
+                        dataManager.refreshData()
+                    }
+                    .foregroundColor(.blue)
+                    
+                    Button("모든 데이터 초기화") {
+                        dataManager.deleteAllWorkouts()
+                        UserProfileManager.shared.resetProfile()
+                        FitnessAssessmentManager.shared.resetAssessment()
+                    }
+                    .foregroundColor(.red)
+                    
+                    HStack {
+                        Text("샘플 데이터 상태")
+                        Spacer()
+                        Text(dataManager.workouts.count > 5 ? "로딩됨" : "없음")
+                            .foregroundColor(dataManager.workouts.count > 5 ? .green : .gray)
+                            .font(.caption)
+                    }
+                }
+                #endif
             }
             .navigationTitle("설정")
         }

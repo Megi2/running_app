@@ -52,12 +52,15 @@ struct RealtimeData {
     let heartRate: Double
     let cadence: Double
     let distance: Double
-    let currentCalories: Double // 칼로리 추가
+    let currentCalories: Double
     let recentPaces: [Double]
     let recentCadences: [Double]
     let recentHeartRates: [Double]
     let isWarningActive: Bool
     let warningMessage: String
+    
+    // 로컬 계산용 추가
+    let receivedAt: Date = Date() // 수신 시간
 }
 
 // MARK: - 분석 결과 데이터 모델들

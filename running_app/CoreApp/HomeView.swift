@@ -1,3 +1,10 @@
+//
+//  HomeView.swift
+//  running_app
+//
+//  메인 홈 화면 (타입 수정됨)
+//
+
 import SwiftUI
 
 struct HomeView: View {
@@ -62,12 +69,7 @@ struct CurrentGoalProgressView: View {
         if let goals = assessmentManager.recommendedGoals,
            let tracker = assessmentManager.progressTracker {
             
-<<<<<<< HEAD:running_app/HomeView.swift
-=======
-            // 다음 목표 계산
             let nextGoal = getNextGoal(goals: goals, tracker: tracker)
-            
->>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Text("현재 목표")
@@ -84,12 +86,7 @@ struct CurrentGoalProgressView: View {
                     .foregroundColor(.blue)
                 }
                 
-<<<<<<< HEAD:running_app/HomeView.swift
                 // 다음 목표 (미달성된 가장 가까운 목표)
-                let nextGoal = getNextGoal(goals: goals, tracker: tracker)
-                
-=======
->>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
                 VStack(spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -141,7 +138,7 @@ struct CurrentGoalProgressView: View {
         }
     }
     
-    private func getNextGoal(goals: RunningGoals, tracker: ProgressTracker) -> NextGoalInfo {
+    private func getNextGoal(goals: Zone2Goals, tracker: Zone2ProgressTracker) -> NextGoalInfo {
         if !tracker.achievedShortTermDistance {
             return NextGoalInfo(title: "단기 목표", targetDistance: goals.shortTermDistance, color: .green)
         } else if !tracker.achievedMediumTermDistance {
@@ -152,10 +149,6 @@ struct CurrentGoalProgressView: View {
     }
 }
 
-<<<<<<< HEAD:running_app/HomeView.swift
-
-=======
->>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
 // MARK: - 기본 목표 진행상황 (평가 미완료)
 struct BasicGoalProgressView: View {
     @EnvironmentObject var dataManager: RunningDataManager
@@ -195,7 +188,7 @@ struct BasicGoalProgressView: View {
                 .progressViewStyle(LinearProgressViewStyle(tint: .blue))
                 .scaleEffect(x: 1, y: 2, anchor: .center)
             
-            Text("체력 평가를 완료하면 개인 맞춤 목표를 설정해드려요!")
+            Text("Zone 2 평가를 완료하면 개인 맞춤 목표를 설정해드려요!")
                 .font(.caption)
                 .foregroundColor(.blue)
                 .padding(.top, 4)
@@ -214,11 +207,6 @@ struct TodaysWorkoutRecommendationView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-<<<<<<< HEAD:running_app/HomeView.swift
-                Image(systemName: "brain.head.profile")
-                    .foregroundColor(.purple)
-=======
->>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
                 Text("오늘의 추천 운동")
                     .font(.headline)
                     .fontWeight(.bold)
@@ -363,7 +351,7 @@ struct TodaysWorkoutRecommendationView: View {
 }
 
 struct MotivationalMessageView: View {
-    let tracker: ProgressTracker
+    let tracker: Zone2ProgressTracker
     
     var body: some View {
         let message = generateMotivationalMessage()
@@ -422,11 +410,7 @@ struct MotivationalMessageView: View {
     }
 }
 
-<<<<<<< HEAD:running_app/HomeView.swift
-// MARK: - 기존 컴포넌트들 (간소화)
-=======
 // MARK: - 기존 컴포넌트들
->>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
 struct MetricView: View {
     let title: String
     let value: String
@@ -549,13 +533,7 @@ struct RecentWorkoutView: View {
     }
 }
 
-<<<<<<< HEAD:running_app/HomeView.swift
-// 기존 RealtimeMonitoringView 등은 그대로 유지
-
-// MARK: - 실시간 모니터링 카드 (기존 HomeView에 있던 내용)
-=======
 // MARK: - 실시간 모니터링 카드
->>>>>>> 0767cdb (Fix folder):running_app/CoreApp/HomeView.swift
 struct RealtimeMonitoringCardView: View {
     @EnvironmentObject var dataManager: RunningDataManager
     @State private var isExpanded = true

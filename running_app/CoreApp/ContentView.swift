@@ -1,3 +1,10 @@
+//
+//  ContentView.swift
+//  running_app
+//
+//  메인 콘텐츠 뷰 (타입 수정됨)
+//
+
 import SwiftUI
 import Charts
 
@@ -18,9 +25,10 @@ struct ContentView: View {
                         Text("홈")
                     }
                 
-                // 목표 & 진행상황 화면 (새로 추가)
+                // 목표 & 진행상황 화면
                 GoalsDashboardView()
                     .environmentObject(dataManager)
+                    .environmentObject(assessmentManager)
                     .tabItem {
                         Image(systemName: "target")
                         Text("목표")
@@ -56,8 +64,31 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("WorkoutCompleted"))) { notification in
             // 운동 완료 시 목표 진행상황 업데이트
             if let workout = notification.object as? WorkoutSummary {
-                assessmentManager.updateProgress(with: workout)
+                updateProgressWithWorkout(workout)
             }
+        }
+    }
+    
+    private func updateProgressWithWorkout(_ workout: WorkoutSummary) {
+        // Zone 2 평가가 완료된 경우에만 진행상황 업데이트
+        if assessmentManager.hasCompletedAssessment,
+           let tracker = assessmentManager.progressTracker {
+            
+            // 기본 기록 업데이트
+            if workout.distance > tracker.bestDistance {
+                tracker.bestDistance = workout.distance
+            }
+            
+            if workout.averagePace < tracker.bestPace {
+                tracker.bestPace = workout.averagePace
+            }
+            
+            tracker.totalWorkouts += 1
+            
+            // 주간 통계 업데이트
+            tracker.updateWeeklyProgress(workout)
+            
+            print("📊 진행상황 업데이트 완료: 최고거리 \(tracker.bestDistance)km")
         }
     }
 }

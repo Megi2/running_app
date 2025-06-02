@@ -2,62 +2,97 @@
 //  AssessmentInstructionView.swift
 //  running_app
 //
-//  Created by 전진하 on 6/1/25.
-//
-
-
-//
-//  AssessmentInstructionView.swift
-//  running_app
-//
-//  Created by AI Assistant on 6/1/25.
+//  Zone 2 평가 안내 화면
 //
 
 import SwiftUI
 
-// MARK: - 평가 안내 화면
 struct AssessmentInstructionView: View {
+    @StateObject private var profileManager = UserProfileManager.shared
+    
+    var zone2HeartRateRange: ClosedRange<Double> {
+        let profile = profileManager.userProfile
+        let heartRateZones = profile.heartRateZones
+        return heartRateZones.zone2
+    }
+    
     var body: some View {
         VStack(spacing: 30) {
             VStack(spacing: 12) {
-                Text("평가 달리기 안내")
+                Text("Zone 2 평가 안내")
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                Text("정확한 평가를 위해 다음 사항을 확인해주세요")
+                Text("당신의 Zone 2 최대 지속력을 측정합니다")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.top)
             
+            // 개인 Zone 2 범위 표시
+            VStack(spacing: 16) {
+                Text("당신의 Zone 2 범위")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                HStack(spacing: 20) {
+                    VStack {
+                        Text("\(Int(zone2HeartRateRange.lowerBound))")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.red)
+                        Text("최소 심박수")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Text("~")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    
+                    VStack {
+                        Text("\(Int(zone2HeartRateRange.upperBound))")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.red)
+                        Text("최대 심박수")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding()
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(12)
+            }
+            
             VStack(spacing: 20) {
-                InstructionCard(
-                    icon: "figure.run",
-                    title: "1km 달리기",
-                    description: "편안한 속도로 1km를 완주해주세요\n무리하지 마시고 본인 페이스를 유지하세요",
-                    color: .green
+                Zone2InstructionCard(
+                    icon: "heart.fill",
+                    title: "Zone 2 유지하기",
+                    description: "심박수를 \(Int(zone2HeartRateRange.lowerBound))-\(Int(zone2HeartRateRange.upperBound)) 범위로 유지하세요\n너무 빠르거나 느리면 안됩니다",
+                    color: .red
                 )
                 
-                InstructionCard(
-                    icon: "applewatch",
-                    title: "Apple Watch 착용",
-                    description: "정확한 심박수와 페이스 측정을 위해\nApple Watch를 착용해주세요",
+                Zone2InstructionCard(
+                    icon: "infinity",
+                    title: "최대한 오래 달리기",
+                    description: "Zone 2를 유지하면서 최대한 오래 달려주세요\n힘들어지면 속도를 줄이되 멈추지 마세요",
                     color: .blue
                 )
                 
-                InstructionCard(
-                    icon: "location.fill",
-                    title: "야외 환경",
-                    description: "GPS 신호가 잘 잡히는 야외에서\n달리기를 진행해주세요",
-                    color: .orange
+                Zone2InstructionCard(
+                    icon: "figure.run",
+                    title: "편안한 대화 가능한 속도",
+                    description: "달리면서 대화할 수 있을 정도의 편안한 속도\n숨이 많이 차면 너무 빠른 겁니다",
+                    color: .green
                 )
                 
-                InstructionCard(
-                    icon: "heart.fill",
-                    title: "컨디션 체크",
-                    description: "몸상태가 좋은 날에 진행하시고\n아프거나 피곤하면 다음에 하세요",
-                    color: .red
+                Zone2InstructionCard(
+                    icon: "applewatch",
+                    title: "심박수 모니터링",
+                    description: "Apple Watch를 착용하고 실시간으로\n심박수를 확인하며 달려주세요",
+                    color: .orange
                 )
             }
             
@@ -67,7 +102,7 @@ struct AssessmentInstructionView: View {
     }
 }
 
-struct InstructionCard: View {
+struct Zone2InstructionCard: View {
     let icon: String
     let title: String
     let description: String
@@ -100,3 +135,5 @@ struct InstructionCard: View {
         .cornerRadius(12)
     }
 }
+
+

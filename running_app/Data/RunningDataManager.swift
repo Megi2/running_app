@@ -9,6 +9,11 @@ class RunningDataManager: NSObject, ObservableObject {
     @Published var currentRealtimeData: RealtimeData?
     @Published var isLoading = false
     
+    // 로컬 타이머 추가
+    @Published var localElapsedTime: TimeInterval = 0
+    private var localTimer: Timer?
+    private var workoutStartTime: Date?
+    
     // Core Data 매니저와 로컬 분석 엔진
     private let coreDataManager = CoreDataManager.shared
     private let analysisEngine = LocalAnalysisEngine()
@@ -102,6 +107,45 @@ class RunningDataManager: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - 로컬 타이머 관리
+    
+    // 로컬 타이머 시작
+    private func startLocalTimer(baseElapsedTime: TimeInterval) {
+        workoutStartTime = Date().addingTimeInterval(-baseElapsedTime)
+        
+        localTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                if let startTime = self.workoutStartTime {
+                    self.localElapsedTime = Date().timeIntervalSince(startTime)
+                }
+            }
+        }
+        
+        print("📱 ⏱️ 로컬 타이머 시작 - 기준 시간: \(String(format: "%.0f", baseElapsedTime))초")
+    }
+    
+    // 로컬 타이머 기준 시간 업데이트 (5초마다 Watch 데이터로 보정)
+    private func updateLocalTimerBase(newElapsedTime: TimeInterval) {
+        // Watch에서 받은 시간과 로컬 시간의 차이 계산
+        let timeDifference = abs(newElapsedTime - localElapsedTime)
+        
+        // 차이가 2초 이상이면 보정 (네트워크 지연 고려)
+        if timeDifference > 2.0 {
+            workoutStartTime = Date().addingTimeInterval(-newElapsedTime)
+            localElapsedTime = newElapsedTime
+            print("📱 ⏱️ 로컬 타이머 보정: \(String(format: "%.1f", timeDifference))초 차이")
+        }
+    }
+    
+    // 로컬 타이머 정지
+    private func stopLocalTimer() {
+        localTimer?.invalidate()
+        localTimer = nil
+        workoutStartTime = nil
+        localElapsedTime = 0
+        print("📱 ⏱️ 로컬 타이머 정지")
+    }
+    
     // MARK: - 실시간 분석 (로컬에서 수행)
     private func performLocalAnalysis(_ realtimeData: RealtimeData) {
         // 페이스 안정성 분석
@@ -134,19 +178,129 @@ class RunningDataManager: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - 데이터 처리 메서드들
+    
+    // 실시간 데이터 처리
+    private func handleRealtimeData(_ message: [String: Any]) {
+        let realtimeData = RealtimeData(
+            timestamp: message["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970,
+            elapsedTime: message["elapsed_time"] as? TimeInterval ?? 0,
+            currentPace: message["current_pace"] as? Double ?? 0,
+            heartRate: message["heart_rate"] as? Double ?? 0,
+            cadence: message["cadence"] as? Double ?? 0,
+            distance: message["distance"] as? Double ?? 0,
+            currentCalories: message["current_calories"] as? Double ?? 0,
+            recentPaces: message["recent_paces"] as? [Double] ?? [],
+            recentCadences: message["recent_cadences"] as? [Double] ?? [],
+            recentHeartRates: message["recent_heart_rates"] as? [Double] ?? [],
+            isWarningActive: message["is_warning_active"] as? Bool ?? false,
+            warningMessage: message["warning_message"] as? String ?? ""
+        )
+        
+        self.currentRealtimeData = realtimeData
+        
+        // 처음 데이터 수신 시 로컬 타이머 시작
+        if !self.isReceivingRealtimeData {
+            self.startLocalTimer(baseElapsedTime: realtimeData.elapsedTime)
+        } else {
+            // 기존 데이터 수신 중이면 기준 시간만 업데이트
+            self.updateLocalTimerBase(newElapsedTime: realtimeData.elapsedTime)
+        }
+        
+        self.isReceivingRealtimeData = true
+        
+        // 로컬에서 실시간 분석 수행
+        performLocalAnalysis(realtimeData)
+        
+        print("📱 실시간 데이터 업데이트: 거리 \(String(format: "%.2f", realtimeData.distance))km, 페이스 \(String(format: "%.0f", realtimeData.currentPace))초/km")
+    }
+    
+    // 워크아웃 완료 처리
+    private func handleWorkoutComplete(_ message: [String: Any]) {
+        print("📱 🏁 워크아웃 완료 신호 수신")
+        
+        if let workoutData = message["workoutData"] as? Data {
+            handleLegacyWorkoutData(workoutData)
+        }
+        
+        // 실시간 데이터 수신 즉시 종료
+        DispatchQueue.main.async {
+            self.stopLocalTimer()
+            self.isReceivingRealtimeData = false
+            self.currentRealtimeData = nil
+            print("📱 ✅ 실시간 데이터 수신 종료 - 패널 숨김")
+        }
+    }
+    
+    // 기존 워크아웃 데이터 처리
+    private func handleLegacyWorkoutData(_ workoutData: Data) {
+        do {
+            let workout = try JSONDecoder().decode(WorkoutSummary.self, from: workoutData)
+            
+            // Core Data에 저장
+            saveNewWorkout(workout)
+            
+            print("✅ Watch에서 새 워크아웃 수신 및 저장 완료")
+        } catch {
+            print("❌ 워크아웃 데이터 디코딩 실패: \(error)")
+        }
+    }
+    
+    // 종료 신호 처리
+    private func handleWorkoutEndSignal() {
+        DispatchQueue.main.async {
+            self.stopLocalTimer()
+            self.isReceivingRealtimeData = false
+            self.currentRealtimeData = nil
+            print("📱 🛑 종료 신호로 실시간 패널 즉시 숨김")
+        }
+    }
+    
+    // 통합 데이터 처리
+    private func handleIncomingData(_ data: [String: Any], source: String) {
+        print("📱 Watch로부터 데이터 수신 (\(source)): \(data["type"] as? String ?? "unknown")")
+        
+        if let messageType = data["type"] as? String {
+            switch messageType {
+            case "realtime_data", "realtime_data_fallback":
+                self.handleRealtimeData(data)
+            case "workout_complete":
+                self.handleWorkoutComplete(data)
+            case "workout_end_signal":
+                self.handleWorkoutEndSignal()
+            default:
+                print("⚠️ 알 수 없는 메시지 타입: \(messageType)")
+            }
+        } else {
+            // 기존 방식 (이전 버전 호환성) - 메시지 타입이 없는 경우
+            if let workoutData = data["workoutData"] as? Data {
+                self.handleLegacyWorkoutData(workoutData)
+            }
+        }
+    }
+    
+    // MARK: - 공개 메서드들
+    
+    // 수동으로 실시간 모드 종료 (디버깅용)
+    func stopRealtimeDataReception() {
+        DispatchQueue.main.async {
+            self.stopLocalTimer()
+            self.isReceivingRealtimeData = false
+            self.currentRealtimeData = nil
+            print("📱 🛑 실시간 데이터 수신 수동 종료")
+        }
+    }
+    
     func getWeeklyStats() -> WeeklyStats {
         let oneWeekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
         let thisWeekWorkouts = workouts.filter { $0.date >= oneWeekAgo }
         
         let totalDistance = thisWeekWorkouts.map { $0.distance }.reduce(0, +)
         let workoutCount = thisWeekWorkouts.count
-        
-        let efficiencies = thisWeekWorkouts.compactMap { workout -> Double? in
-            guard workout.averageHeartRate > 0 && workout.averagePace > 0 else { return nil }
+        let efficiencies = thisWeekWorkouts.map { workout in
             let speed = 3600 / workout.averagePace
             return speed / workout.averageHeartRate
         }
-        
         let averageEfficiency = efficiencies.isEmpty ? 0 : efficiencies.reduce(0, +) / Double(efficiencies.count)
         
         return WeeklyStats(
@@ -282,79 +436,34 @@ class RunningDataManager: NSObject, ObservableObject {
 // MARK: - Watch Connectivity
 extension RunningDataManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        print("iPhone Watch Connectivity 활성화 완료")
-    }
-    
-    func sessionDidBecomeInactive(_ session: WCSession) {
-        print("WCSession 비활성화")
-    }
-    
-    func sessionDidDeactivate(_ session: WCSession) {
-        print("WCSession 비활성화됨")
-        WCSession.default.activate()
-    }
-    
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
         DispatchQueue.main.async {
-            if let messageType = message["type"] as? String {
-                switch messageType {
-                case "realtime_data":
-                    self.handleRealtimeData(message)
-                case "workout_complete":
-                    self.handleWorkoutComplete(message)
-                default:
-                    // 기존 방식 (이전 버전 호환성)
-                    if let workoutData = message["workoutData"] as? Data {
-                        self.handleLegacyWorkoutData(workoutData)
-                    }
-                }
+            print("📱 iPhone Watch Connectivity 활성화 완료: \(activationState.rawValue)")
+            if let error = error {
+                print("❌ iPhone 활성화 오류: \(error.localizedDescription)")
             }
         }
     }
     
-    private func handleRealtimeData(_ message: [String: Any]) {
-        let realtimeData = RealtimeData(
-            timestamp: message["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970,
-            elapsedTime: message["elapsed_time"] as? TimeInterval ?? 0,
-            currentPace: message["current_pace"] as? Double ?? 0,
-            heartRate: message["heart_rate"] as? Double ?? 0,
-            cadence: message["cadence"] as? Double ?? 0,
-            distance: message["distance"] as? Double ?? 0,
-            currentCalories: message["current_calories"] as? Double ?? 0,
-            recentPaces: message["recent_paces"] as? [Double] ?? [],
-            recentCadences: message["recent_cadences"] as? [Double] ?? [],
-            recentHeartRates: message["recent_heart_rates"] as? [Double] ?? [],
-            isWarningActive: message["is_warning_active"] as? Bool ?? false,
-            warningMessage: message["warning_message"] as? String ?? ""
-        )
-        
-        self.currentRealtimeData = realtimeData
-        self.isReceivingRealtimeData = true
-        
-        // 로컬에서 실시간 분석 수행
-        performLocalAnalysis(realtimeData)
+    func sessionDidBecomeInactive(_ session: WCSession) {
+        print("📱 WCSession 비활성화")
     }
     
-    private func handleWorkoutComplete(_ message: [String: Any]) {
-        if let workoutData = message["workoutData"] as? Data {
-            handleLegacyWorkoutData(workoutData)
+    func sessionDidDeactivate(_ session: WCSession) {
+        print("📱 WCSession 비활성화됨 - 재활성화 시도")
+        WCSession.default.activate()
+    }
+    
+    // 메시지 수신 처리 (sendMessage용)
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        DispatchQueue.main.async {
+            self.handleIncomingData(message, source: "Message")
         }
-        
-        // 실시간 데이터 수신 종료
-        self.isReceivingRealtimeData = false
-        self.currentRealtimeData = nil
     }
     
-    private func handleLegacyWorkoutData(_ workoutData: Data) {
-        do {
-            let workout = try JSONDecoder().decode(WorkoutSummary.self, from: workoutData)
-            
-            // Core Data에 저장
-            saveNewWorkout(workout)
-            
-            print("✅ Watch에서 새 워크아웃 수신 및 저장 완료")
-        } catch {
-            print("워크아웃 데이터 디코딩 실패: \(error)")
+    // transferUserInfo 수신 처리 (더 안정적)
+    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any]) {
+        DispatchQueue.main.async {
+            self.handleIncomingData(userInfo, source: "UserInfo")
         }
     }
 }

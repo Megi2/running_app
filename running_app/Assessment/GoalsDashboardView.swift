@@ -2,15 +2,7 @@
 //  GoalsDashboardView.swift
 //  running_app
 //
-//  Created by 전진하 on 6/1/25.
-//
-
-
-//
-//  GoalsDashboardView.swift
-//  running_app
-//
-//  Created by AI Assistant on 6/1/25.
+//  Zone 2 기반 목표 대시보드 (타입 수정됨)
 //
 
 import SwiftUI
@@ -75,11 +67,14 @@ struct GoalsDashboardView: View {
         }
         .sheet(isPresented: $showingAssessmentResult) {
             if let workout = assessmentManager.assessmentWorkout,
-               let goals = assessmentManager.recommendedGoals {
+               let score = assessmentManager.zone2CapacityScore,
+               let goals = assessmentManager.recommendedGoals,
+               let profile = assessmentManager.zone2Profile {
                 AssessmentResultView(
                     assessmentWorkout: workout,
-                    fitnessLevel: assessmentManager.currentFitnessLevel,
-                    recommendedGoals: goals
+                    zone2CapacityScore: score,
+                    recommendedGoals: goals,
+                    zone2Profile: profile
                 )
             }
         }
@@ -101,7 +96,7 @@ struct AssessmentPromptView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                Text("1km 평가 달리기를 통해\n당신에게 맞는 목표를 찾아드려요")
+                Text("Zone 2 평가를 통해\n당신에게 맞는 목표를 찾아드려요")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -111,13 +106,13 @@ struct AssessmentPromptView: View {
                 PromptBenefit(
                     icon: "person.crop.circle.badge.checkmark",
                     title: "개인화된 목표",
-                    description: "현재 체력에 맞는 현실적이고 달성 가능한 목표"
+                    description: "현재 Zone 2 능력에 맞는 현실적이고 달성 가능한 목표"
                 )
                 
                 PromptBenefit(
                     icon: "chart.line.uptrend.xyaxis",
                     title: "단계별 성장",
-                    description: "체력 향상에 따른 자동 목표 업데이트"
+                    description: "Zone 2 능력 향상에 따른 자동 목표 업데이트"
                 )
                 
                 PromptBenefit(
@@ -130,7 +125,7 @@ struct AssessmentPromptView: View {
             Button(action: onStartAssessment) {
                 HStack {
                     Image(systemName: "play.circle.fill")
-                    Text("체력 평가 시작하기")
+                    Text("Zone 2 평가 시작하기")
                 }
                 .font(.headline)
                 .foregroundColor(.white)
@@ -185,8 +180,10 @@ struct CompletedAssessmentDashboard: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // 체력 수준 카드
-            CurrentFitnessLevelCard(level: assessmentManager.currentFitnessLevel)
+            // Zone 2 능력 점수 카드
+            if let score = assessmentManager.zone2CapacityScore {
+                CurrentZone2ScoreCard(score: score)
+            }
             
             // 목표 진행상황
             if let goals = assessmentManager.recommendedGoals,
@@ -211,30 +208,30 @@ struct CompletedAssessmentDashboard: View {
     }
 }
 
-// MARK: - 현재 체력 수준 카드
-struct CurrentFitnessLevelCard: View {
-    let level: FitnessLevel
+// MARK: - 현재 Zone 2 능력 점수 카드
+struct CurrentZone2ScoreCard: View {
+    let score: Zone2CapacityScore
     
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: level.icon)
+            Image(systemName: "chart.bar.fill")
                 .font(.system(size: 40))
-                .foregroundColor(level.color)
+                .foregroundColor(score.scoreColor)
                 .frame(width: 60, height: 60)
-                .background(level.color.opacity(0.1))
+                .background(score.scoreColor.opacity(0.1))
                 .cornerRadius(12)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("현재 체력 수준")
+                Text("Zone 2 능력 점수")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text(level.displayName)
+                Text("\(Int(score.totalScore))/100")
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(level.color)
+                    .foregroundColor(score.scoreColor)
                 
-                Text("꾸준히 운동해서 다음 단계로!")
+                Text("꾸준히 운동해서 점수를 높여보세요!")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -249,8 +246,8 @@ struct CurrentFitnessLevelCard: View {
 
 // MARK: - 목표 진행상황 카드
 struct GoalsProgressCard: View {
-    let goals: RunningGoals
-    let tracker: ProgressTracker
+    let goals: Zone2Goals
+    let tracker: Zone2ProgressTracker
     @EnvironmentObject var dataManager: RunningDataManager
     
     var body: some View {
@@ -400,8 +397,8 @@ struct PaceGoalRow: View {
 
 // MARK: - 주간 진행상황 카드
 struct WeeklyProgressCard: View {
-    let goals: RunningGoals
-    let tracker: ProgressTracker
+    let goals: Zone2Goals
+    let tracker: Zone2ProgressTracker
     @EnvironmentObject var dataManager: RunningDataManager
     
     var weeklyStats: WeeklyStats {
@@ -530,7 +527,7 @@ struct WeeklyMetric: View {
 
 // MARK: - 개인 기록 카드
 struct PersonalRecordsCard: View {
-    let tracker: ProgressTracker
+    let tracker: Zone2ProgressTracker
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -603,9 +600,9 @@ struct RecordMetric: View {
 
 // MARK: - 성취 카드
 struct AchievementsCard: View {
-    let achievements: [Achievement]
+    let achievements: [Zone2Achievement]
     
-    var recentAchievements: [Achievement] {
+    var recentAchievements: [Zone2Achievement] {
         Array(achievements.suffix(3))
     }
     
@@ -638,7 +635,7 @@ struct AchievementsCard: View {
 }
 
 struct AchievementRow: View {
-    let achievement: Achievement
+    let achievement: Zone2Achievement
     
     var body: some View {
         HStack(spacing: 12) {

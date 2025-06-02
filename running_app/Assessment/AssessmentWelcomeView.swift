@@ -2,46 +2,57 @@
 //  AssessmentWelcomeView.swift
 //  running_app
 //
-//  Created by 전진하 on 6/1/25.
-//
-
-
-//
-//  AssessmentWelcomeView.swift
-//  running_app
-//
-//  Created by AI Assistant on 6/1/25.
+//  Zone 2 평가 환영 화면
 //
 
 import SwiftUI
 
-// MARK: - 환영 화면
 struct AssessmentWelcomeView: View {
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
             
-            Image(systemName: "figure.run.circle.fill")
+            Image(systemName: "heart.circle.fill")
                 .font(.system(size: 80))
-                .foregroundColor(.green)
+                .foregroundColor(.red)
             
             VStack(spacing: 16) {
-                Text("체력 평가를 시작합니다")
+                Text("Zone 2 최대 지속력 평가")
                     .font(.title)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
                 
-                Text("1km 달리기를 통해 현재 체력을 측정하고\n개인 맞춤 목표를 설정해드릴게요")
+                Text("Zone 2 심박수 범위에서 최대한 오래\n달릴 수 있는 능력을 측정합니다")
                     .font(.headline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
             
             VStack(alignment: .leading, spacing: 12) {
-                AssessmentFeatureRow(icon: "target", title: "개인 맞춤 목표 설정", color: .blue)
-                AssessmentFeatureRow(icon: "chart.line.uptrend.xyaxis", title: "체력 수준 자동 평가", color: .green)
-                AssessmentFeatureRow(icon: "arrow.up.circle.fill", title: "단계별 성장 가이드", color: .orange)
-                AssessmentFeatureRow(icon: "trophy.fill", title: "달성 가능한 목표 제시", color: .purple)
+                Zone2FeatureRow(
+                    icon: "heart.fill",
+                    title: "개인 맞춤 Zone 2 계산",
+                    description: "나이와 안정시 심박수로 정확한 Zone 2 설정",
+                    color: .red
+                )
+                Zone2FeatureRow(
+                    icon: "timer",
+                    title: "최대 지속 시간 측정",
+                    description: "Zone 2에서 얼마나 오래 달릴 수 있는지 평가",
+                    color: .blue
+                )
+                Zone2FeatureRow(
+                    icon: "location.fill",
+                    title: "최대 지속 거리 측정",
+                    description: "Zone 2에서 달릴 수 있는 최대 거리 측정",
+                    color: .green
+                )
+                Zone2FeatureRow(
+                    icon: "target",
+                    title: "맞춤형 유산소 목표",
+                    description: "Zone 2 능력에 맞는 개인화된 목표 설정",
+                    color: .purple
+                )
             }
             .padding()
             .background(Color.white.opacity(0.8))
@@ -53,9 +64,10 @@ struct AssessmentWelcomeView: View {
     }
 }
 
-struct AssessmentFeatureRow: View {
+struct Zone2FeatureRow: View {
     let icon: String
     let title: String
+    let description: String
     let color: Color
     
     var body: some View {
@@ -63,11 +75,18 @@ struct AssessmentFeatureRow: View {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundColor(color)
-                .frame(width: 24)
+                .frame(width: 30)
             
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             
             Spacer()
         }
