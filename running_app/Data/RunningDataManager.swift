@@ -1,7 +1,6 @@
 import Foundation
 import WatchConnectivity
 
-// MARK: - 데이터 매니저 (Core Data만 사용)
 class RunningDataManager: NSObject, ObservableObject {
     @Published var workouts: [WorkoutSummary] = []
     @Published var bestDistance: Double = 0
@@ -17,6 +16,9 @@ class RunningDataManager: NSObject, ObservableObject {
     // Core Data 매니저와 로컬 분석 엔진
     private let coreDataManager = CoreDataManager.shared
     private let analysisEngine = LocalAnalysisEngine()
+    
+    // 평가 코디네이터 참조
+    private let assessmentCoordinator = AssessmentCoordinator.shared
     
     override init() {
         super.init()
@@ -215,12 +217,15 @@ class RunningDataManager: NSObject, ObservableObject {
         print("📱 실시간 데이터 업데이트: 거리 \(String(format: "%.2f", realtimeData.distance))km, 페이스 \(String(format: "%.0f", realtimeData.currentPace))초/km")
     }
     
-    // 워크아웃 완료 처리
+    // 워크아웃 완료 처리 (수정된 버전)
     private func handleWorkoutComplete(_ message: [String: Any]) {
         print("📱 🏁 워크아웃 완료 신호 수신")
         
+        // 평가 모드인지 확인
+        let isAssessment = message["isAssessment"] as? Bool ?? false
+        
         if let workoutData = message["workoutData"] as? Data {
-            handleLegacyWorkoutData(workoutData)
+            handleLegacyWorkoutData(workoutData, isAssessment: isAssessment)
         }
         
         // 실시간 데이터 수신 즉시 종료
@@ -232,17 +237,44 @@ class RunningDataManager: NSObject, ObservableObject {
         }
     }
     
-    // 기존 워크아웃 데이터 처리
-    private func handleLegacyWorkoutData(_ workoutData: Data) {
+    // 기존 워크아웃 데이터 처리 (수정된 버전)
+    private func handleLegacyWorkoutData(_ workoutData: Data, isAssessment: Bool = false) {
         do {
             let workout = try JSONDecoder().decode(WorkoutSummary.self, from: workoutData)
             
             // Core Data에 저장
             saveNewWorkout(workout)
             
+            // 평가 모드인 경우 평가 완료 알림
+            if isAssessment {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("AssessmentCompleted"),
+                    object: workout
+                )
+                print("📊 평가 운동 완료 알림 전송")
+            } else {
+                // 일반 운동 완료 알림
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("WorkoutCompleted"),
+                    object: workout
+                )
+                print("🏃‍♂️ 일반 운동 완료 알림 전송")
+            }
+            
             print("✅ Watch에서 새 워크아웃 수신 및 저장 완료")
         } catch {
             print("❌ 워크아웃 데이터 디코딩 실패: \(error)")
+        }
+    }
+    
+    // 평가 완료 처리
+    private func handleAssessmentCompleted(_ message: [String: Any]) {
+        print("📊 평가 완료 신호 수신")
+        
+        DispatchQueue.main.async {
+            self.stopLocalTimer()
+            self.isReceivingRealtimeData = false
+            self.currentRealtimeData = nil
         }
     }
     
@@ -266,6 +298,8 @@ class RunningDataManager: NSObject, ObservableObject {
                 self.handleRealtimeData(data)
             case "workout_complete":
                 self.handleWorkoutComplete(data)
+            case "assessment_completed":
+                self.handleAssessmentCompleted(data)
             case "workout_end_signal":
                 self.handleWorkoutEndSignal()
             default:
@@ -430,40 +464,5 @@ class RunningDataManager: NSObject, ObservableObject {
             efficiency: efficiencyResult,
             cadenceOptimization: cadenceResult
         )
-    }
-}
-
-// MARK: - Watch Connectivity
-extension RunningDataManager: WCSessionDelegate {
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        DispatchQueue.main.async {
-            print("📱 iPhone Watch Connectivity 활성화 완료: \(activationState.rawValue)")
-            if let error = error {
-                print("❌ iPhone 활성화 오류: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    func sessionDidBecomeInactive(_ session: WCSession) {
-        print("📱 WCSession 비활성화")
-    }
-    
-    func sessionDidDeactivate(_ session: WCSession) {
-        print("📱 WCSession 비활성화됨 - 재활성화 시도")
-        WCSession.default.activate()
-    }
-    
-    // 메시지 수신 처리 (sendMessage용)
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        DispatchQueue.main.async {
-            self.handleIncomingData(message, source: "Message")
-        }
-    }
-    
-    // transferUserInfo 수신 처리 (더 안정적)
-    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any]) {
-        DispatchQueue.main.async {
-            self.handleIncomingData(userInfo, source: "UserInfo")
-        }
     }
 }

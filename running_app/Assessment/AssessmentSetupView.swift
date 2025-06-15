@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AssessmentSetupView: View {
-    @StateObject private var assessmentManager = FitnessAssessmentManager.shared
+    @StateObject private var assessmentCoordinator = AssessmentCoordinator.shared
     @EnvironmentObject var dataManager: RunningDataManager
     @Environment(\.dismiss) private var dismiss
     
@@ -22,7 +22,9 @@ struct AssessmentSetupView: View {
                 
                 VStack(spacing: 0) {
                     // 진행률 헤더
-                    AssessmentProgressHeader(currentStep: currentStep, totalSteps: totalSteps)
+                    AssessmentProgressHeader(currentStep: currentStep, totalSteps: totalSteps) {
+                        dismiss()
+                    }
                     
                     // 단계별 콘텐츠
                     TabView(selection: $currentStep) {
@@ -53,22 +55,21 @@ struct AssessmentSetupView: View {
     }
     
     private func startAssessmentRun() {
-        // Apple Watch에서 1km 달리기 시작을 알리는 메시지 전송
+        // 평가 모드 시작
+        assessmentCoordinator.startAssessment()
+        
+        // 현재 시트 닫기
         dismiss()
         
-        // 평가 모드 플래그 설정 (Watch로 전송)
-        NotificationCenter.default.post(
-            name: NSNotification.Name("StartAssessmentRun"),
-            object: nil,
-            userInfo: ["targetDistance": 1.0, "isAssessment": true]
-        )
+        print("📊 평가 달리기 시작됨")
     }
 }
 
-// MARK: - 진행률 헤더
+// MARK: - 진행률 헤더 (수정된 버전)
 struct AssessmentProgressHeader: View {
     let currentStep: Int
     let totalSteps: Int
+    let onSkip: () -> Void
     
     var progress: Double {
         Double(currentStep) / Double(totalSteps - 1)
@@ -78,8 +79,9 @@ struct AssessmentProgressHeader: View {
         VStack(spacing: 16) {
             HStack {
                 Button("건너뛰기") {
-                    // 기본 목표로 설정
+                    // 기본 목표로 설정하고 평가 건너뛰기
                     FitnessAssessmentManager.shared.hasCompletedAssessment = true
+                    onSkip()
                 }
                 .foregroundColor(.secondary)
                 
@@ -98,7 +100,7 @@ struct AssessmentProgressHeader: View {
     }
 }
 
-// MARK: - 네비게이션 버튼
+// MARK: - 네비게이션 버튼 (수정된 버전)
 struct AssessmentNavigationButtons: View {
     @Binding var currentStep: Int
     let totalSteps: Int
