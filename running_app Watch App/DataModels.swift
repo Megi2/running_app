@@ -17,6 +17,25 @@ struct RunningDataPoint: Codable {
     let distance: Double
 }
 
+struct UserProfileForWatch: Codable {
+    let weight: Double
+    let gender: String
+    let age: Int
+    let height: Double?
+    let maxHeartRate: Double?
+    let restingHeartRate: Double?
+    
+    init(weight: Double, gender: String, age: Int, height: Double? = nil, maxHeartRate: Double? = nil, restingHeartRate: Double? = nil) {
+        self.weight = weight
+        self.gender = gender
+        self.age = age
+        self.height = height
+        self.maxHeartRate = maxHeartRate
+        self.restingHeartRate = restingHeartRate
+    }
+}
+
+
 struct WorkoutSummary: Codable {
     let date: Date
     let duration: TimeInterval

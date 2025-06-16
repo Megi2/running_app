@@ -1,5 +1,13 @@
 //
 //  AssessmentModeManager.swift
+//  running_app
+//
+//  Created by 전진하 on 6/16/25.
+//
+
+
+//
+//  AssessmentModeManager.swift
 //  running_app Watch App
 //
 //  Zone 2 평가 모드 관리

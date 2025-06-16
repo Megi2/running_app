@@ -43,7 +43,7 @@ class RunningDataManager: NSObject, ObservableObject {
     }
     
     // MARK: - 새 워크아웃 저장
-    private func saveNewWorkout(_ workout: WorkoutSummary) {
+    func saveNewWorkout(_ workout: WorkoutSummary) {
         // Core Data에 저장
         coreDataManager.saveWorkout(workout)
         
@@ -96,7 +96,38 @@ class RunningDataManager: NSObject, ObservableObject {
         
         return try? JSONSerialization.data(withJSONObject: exportData, options: .prettyPrinted)
     }
-    
+    func updateRealtimeData(from message: [String: Any]) {
+        let realtimeData = RealtimeData(
+            timestamp: message["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970,
+            elapsedTime: message["elapsed_time"] as? TimeInterval ?? 0,
+            currentPace: message["current_pace"] as? Double ?? 0,
+            heartRate: message["heart_rate"] as? Double ?? 0,
+            cadence: message["cadence"] as? Double ?? 0,
+            distance: message["distance"] as? Double ?? 0,
+            currentCalories: message["current_calories"] as? Double ?? 0,
+            recentPaces: message["recent_paces"] as? [Double] ?? [],
+            recentCadences: message["recent_cadences"] as? [Double] ?? [],
+            recentHeartRates: message["recent_heart_rates"] as? [Double] ?? [],
+            isWarningActive: message["is_warning_active"] as? Bool ?? false,
+            warningMessage: message["warning_message"] as? String ?? ""
+        )
+        
+        DispatchQueue.main.async {
+            self.currentRealtimeData = realtimeData
+            
+            // 처음 데이터 수신 시 로컬 타이머 시작
+            if !self.isReceivingRealtimeData {
+                self.startLocalTimer(baseElapsedTime: realtimeData.elapsedTime)
+            } else {
+                // 기존 데이터 수신 중이면 기준 시간만 업데이트
+                self.updateLocalTimerBase(newElapsedTime: realtimeData.elapsedTime)
+            }
+            
+            self.isReceivingRealtimeData = true
+        }
+        
+        print("📱 실시간 데이터 업데이트: 거리 \(String(format: "%.2f", realtimeData.distance))km")
+    }
     // MARK: - 데이터 통계
     func getDataStats() -> (workoutCount: Int, totalDistance: Double, oldestDate: Date?) {
         return coreDataManager.getDataStats()
@@ -289,7 +320,7 @@ class RunningDataManager: NSObject, ObservableObject {
     }
     
     // 통합 데이터 처리
-    private func handleIncomingData(_ data: [String: Any], source: String) {
+    internal func handleIncomingData(_ data: [String: Any], source: String) {
         print("📱 Watch로부터 데이터 수신 (\(source)): \(data["type"] as? String ?? "unknown")")
         
         if let messageType = data["type"] as? String {

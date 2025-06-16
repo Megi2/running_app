@@ -1,8 +1,8 @@
 //
-//  GoalsDashboardView.swift
+//  UpdatedGoalsDashboardView.swift
 //  running_app
 //
-//  Zone 2 기반 목표 대시보드 (타입 수정됨)
+//  임시 데이터로 동작하는 목표 대시보드
 //
 
 import SwiftUI
@@ -12,7 +12,7 @@ struct GoalsDashboardView: View {
     @StateObject private var assessmentManager = FitnessAssessmentManager.shared
     @EnvironmentObject var dataManager: RunningDataManager
     @State private var showingAssessmentSetup = false
-    @State private var showingAssessmentResult = false
+    @State private var showingMockAssessment = false
     
     var body: some View {
         NavigationView {
@@ -26,7 +26,7 @@ struct GoalsDashboardView: View {
                     } else {
                         // 평가 미완료 - 평가 시작 유도
                         AssessmentPromptView(onStartAssessment: {
-                            showingAssessmentSetup = true
+                            showingMockAssessment = true
                         })
                     }
                 }
@@ -39,10 +39,11 @@ struct GoalsDashboardView: View {
                         Menu {
                             Button("목표 재설정") {
                                 // 목표 재설정 로직
+                                regenerateGoals()
                             }
                             
                             Button("평가 다시하기") {
-                                showingAssessmentSetup = true
+                                showingMockAssessment = true
                             }
                             
                             Button("목표 초기화", role: .destructive) {
@@ -55,33 +56,31 @@ struct GoalsDashboardView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAssessmentSetup) {
-            AssessmentSetupView()
-                .environmentObject(dataManager)
+        .fullScreenCover(isPresented: $showingMockAssessment) {
+            MockAssessmentStartView()
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AssessmentCompleted"))) { notification in
-            if let workout = notification.object as? WorkoutSummary {
-                assessmentManager.processAssessmentWorkout(workout)
-                showingAssessmentResult = true
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("MockAssessmentCompleted"))) { notification in
+            // 임시 평가 완료 시 화면 새로고침
+            DispatchQueue.main.async {
+                // 화면이 자동으로 업데이트됨
             }
         }
-        .sheet(isPresented: $showingAssessmentResult) {
-            if let workout = assessmentManager.assessmentWorkout,
-               let score = assessmentManager.zone2CapacityScore,
-               let goals = assessmentManager.recommendedGoals,
-               let profile = assessmentManager.zone2Profile {
-                AssessmentResultView(
-                    assessmentWorkout: workout,
-                    zone2CapacityScore: score,
-                    recommendedGoals: goals,
-                    zone2Profile: profile
-                )
-            }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshMainScreen"))) { _ in
+            // 메인 화면 새로고침 요청
         }
+    }
+    
+    private func regenerateGoals() {
+        // 기존 데이터를 기반으로 목표 재생성
+        let mockData = MockDataGenerator.shared.generateCompleteAssessmentData()
+        assessmentManager.recommendedGoals = mockData.goals
+        assessmentManager.progressTracker = mockData.tracker
+        
+        print("🔄 목표 재설정 완료")
     }
 }
 
-// MARK: - 평가 유도 화면
+// MARK: - 평가 유도 화면 (업데이트됨)
 struct AssessmentPromptView: View {
     let onStartAssessment: () -> Void
     
@@ -106,13 +105,13 @@ struct AssessmentPromptView: View {
                 PromptBenefit(
                     icon: "person.crop.circle.badge.checkmark",
                     title: "개인화된 목표",
-                    description: "현재 Zone 2 능력에 맞는 현실적이고 달성 가능한 목표"
+                    description: "현재 체력에 맞는 현실적이고 달성 가능한 목표"
                 )
                 
                 PromptBenefit(
                     icon: "chart.line.uptrend.xyaxis",
                     title: "단계별 성장",
-                    description: "Zone 2 능력 향상에 따른 자동 목표 업데이트"
+                    description: "체력 향상에 따른 자동 목표 업데이트"
                 )
                 
                 PromptBenefit(
@@ -120,22 +119,37 @@ struct AssessmentPromptView: View {
                     title: "성취감 극대화",
                     description: "달성 가능한 단계별 목표로 지속적인 동기부여"
                 )
+                
+                PromptBenefit(
+                    icon: "wand.and.stars",
+                    title: "임시 모드 지원",
+                    description: "워치 없이도 화면 확인 가능 (테스트 데이터)"
+                )
             }
+            .padding()
+            .background(Color.white.opacity(0.8))
+            .cornerRadius(16)
             
             Button(action: onStartAssessment) {
                 HStack {
                     Image(systemName: "play.circle.fill")
-                    Text("Zone 2 평가 시작하기")
+                    Text("체력 평가 시작하기")
                 }
                 .font(.headline)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .cornerRadius(12)
             }
             
-            Text("약 5-10분 소요")
+            Text("임시 모드: 약 5초 소요")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -173,17 +187,15 @@ struct PromptBenefit: View {
     }
 }
 
-// MARK: - 완료된 평가 대시보드
+// MARK: - 완료된 평가 대시보드 (기존과 동일하지만 임시 데이터 대응)
 struct CompletedAssessmentDashboard: View {
     @EnvironmentObject var assessmentManager: FitnessAssessmentManager
     @EnvironmentObject var dataManager: RunningDataManager
     
     var body: some View {
         VStack(spacing: 20) {
-            // Zone 2 능력 점수 카드
-            if let score = assessmentManager.zone2CapacityScore {
-                CurrentZone2ScoreCard(score: score)
-            }
+            // 체력 수준 카드
+            CurrentFitnessLevelCard(level: assessmentManager.currentFitnessLevel)
             
             // 목표 진행상황
             if let goals = assessmentManager.recommendedGoals,
@@ -203,35 +215,68 @@ struct CompletedAssessmentDashboard: View {
                 if !tracker.achievements.isEmpty {
                     AchievementsCard(achievements: tracker.achievements)
                 }
+                
+                // 임시 데이터 표시 배너
+                MockDataBanner()
             }
         }
     }
 }
 
-// MARK: - 현재 Zone 2 능력 점수 카드
-struct CurrentZone2ScoreCard: View {
-    let score: Zone2CapacityScore
+// MARK: - 임시 데이터 표시 배너
+struct MockDataBanner: View {
+    var body: some View {
+        HStack {
+            Image(systemName: "info.circle.fill")
+                .foregroundColor(.orange)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("임시 데이터 모드")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.orange)
+                
+                Text("현재 테스트 데이터로 화면을 표시하고 있습니다")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - 현재 체력 수준 카드 (기존과 동일)
+struct CurrentFitnessLevelCard: View {
+    let level: FitnessLevel
     
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: "chart.bar.fill")
+            Image(systemName: level.icon)
                 .font(.system(size: 40))
-                .foregroundColor(score.scoreColor)
+                .foregroundColor(level.color)
                 .frame(width: 60, height: 60)
-                .background(score.scoreColor.opacity(0.1))
+                .background(level.color.opacity(0.1))
                 .cornerRadius(12)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Zone 2 능력 점수")
+                Text("현재 체력 수준")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("\(Int(score.totalScore))/100")
+                Text(level.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(score.scoreColor)
+                    .foregroundColor(level.color)
                 
-                Text("꾸준히 운동해서 점수를 높여보세요!")
+                Text("꾸준히 운동해서 다음 단계로!")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -244,10 +289,10 @@ struct CurrentZone2ScoreCard: View {
     }
 }
 
-// MARK: - 목표 진행상황 카드
+// MARK: - 목표 진행상황 카드 (기존과 동일)
 struct GoalsProgressCard: View {
-    let goals: Zone2Goals
-    let tracker: Zone2ProgressTracker
+    let goals: RunningGoals
+    let tracker: ProgressTracker
     @EnvironmentObject var dataManager: RunningDataManager
     
     var body: some View {
@@ -322,8 +367,13 @@ struct GoalProgressRow: View {
                 Spacer()
                 
                 if isAchieved {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("달성!")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
                 } else {
                     Text("\(String(format: "%.1f", currentBest))/\(String(format: "%.1f", targetDistance))km")
                         .font(.caption)
@@ -334,6 +384,7 @@ struct GoalProgressRow: View {
             ProgressView(value: progress)
                 .progressViewStyle(LinearProgressViewStyle(tint: isAchieved ? .green : color))
                 .scaleEffect(y: 1.5)
+                .animation(.easeInOut(duration: 1.0), value: progress)
             
             if !isAchieved {
                 Text("남은 거리: \(String(format: "%.1f", max(0, targetDistance - currentBest)))km")
@@ -379,9 +430,11 @@ struct PaceGoalRow: View {
                         .foregroundColor(.blue)
                     
                     let improvement = currentBest - targetPace
-                    Text("\(String(format: "%.0f", improvement))초 단축 필요")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    if improvement > 0 {
+                        Text("\(String(format: "%.0f", improvement))초 단축 필요")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }
@@ -397,12 +450,17 @@ struct PaceGoalRow: View {
 
 // MARK: - 주간 진행상황 카드
 struct WeeklyProgressCard: View {
-    let goals: Zone2Goals
-    let tracker: Zone2ProgressTracker
+    let goals: RunningGoals
+    let tracker: ProgressTracker
     @EnvironmentObject var dataManager: RunningDataManager
     
     var weeklyStats: WeeklyStats {
-        dataManager.getWeeklyStats()
+        // 임시 데이터 사용
+        WeeklyStats(
+            totalDistance: 4.8, // 이번 주 1회 운동
+            workoutCount: 1,     // 1회 완료
+            averageEfficiency: 0.65
+        )
     }
     
     var body: some View {
@@ -452,6 +510,7 @@ struct WeeklyProgressCard: View {
                 ProgressView(value: min(overallProgress, 1.0))
                     .progressViewStyle(LinearProgressViewStyle(tint: overallProgress >= 1.0 ? .green : .orange))
                     .scaleEffect(y: 1.5)
+                    .animation(.easeInOut(duration: 1.0), value: overallProgress)
             }
         }
         .padding()
@@ -520,6 +579,7 @@ struct WeeklyMetric: View {
             ProgressView(value: min(progress, 1.0))
                 .progressViewStyle(LinearProgressViewStyle(tint: color))
                 .scaleEffect(y: 1.2)
+                .animation(.easeInOut(duration: 1.0), value: progress)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -527,7 +587,7 @@ struct WeeklyMetric: View {
 
 // MARK: - 개인 기록 카드
 struct PersonalRecordsCard: View {
-    let tracker: Zone2ProgressTracker
+    let tracker: ProgressTracker
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -538,7 +598,7 @@ struct PersonalRecordsCard: View {
             HStack(spacing: 20) {
                 RecordMetric(
                     title: "최장 거리",
-                    value: String(format: "%.2f km", tracker.bestDistance),
+                    value: String(format: "%.1f km", tracker.bestDistance),
                     icon: "location.fill",
                     color: .blue
                 )
@@ -600,9 +660,9 @@ struct RecordMetric: View {
 
 // MARK: - 성취 카드
 struct AchievementsCard: View {
-    let achievements: [Zone2Achievement]
+    let achievements: [Achievement]
     
-    var recentAchievements: [Zone2Achievement] {
+    var recentAchievements: [Achievement] {
         Array(achievements.suffix(3))
     }
     
@@ -635,7 +695,7 @@ struct AchievementsCard: View {
 }
 
 struct AchievementRow: View {
-    let achievement: Zone2Achievement
+    let achievement: Achievement
     
     var body: some View {
         HStack(spacing: 12) {

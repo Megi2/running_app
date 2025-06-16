@@ -27,15 +27,6 @@ struct FitnessLevel: Codable {
         default: return "figure.run"
         }
     }
-    
-    var description: String {
-        switch score {
-        case 80...: return "매우 우수한 체력"
-        case 60..<80: return "좋은 체력"
-        case 40..<60: return "보통 체력"
-        default: return "향상 필요"
-        }
-    }
 }
 
 // MARK: - 러닝 목표
@@ -96,7 +87,6 @@ enum RecordType: String, Codable {
     case duration = "최장시간"
 }
 
-// MARK: - 진행 상황 추적
 class ProgressTracker: ObservableObject, Codable {
     @Published var bestDistance: Double = 0
     @Published var bestPace: Double = 999
@@ -110,13 +100,19 @@ class ProgressTracker: ObservableObject, Codable {
     @Published var achievedMediumTermDistance: Bool = false
     @Published var achievedTargetPace: Bool = false
     
+    // Zone 2 특화 기록들
+    @Published var bestZone2Distance: Double = 0
+    @Published var bestZone2Duration: Double = 0
+    @Published var bestZone2Consistency: Double = 0  // 최고 Zone 2 유지율
+    
     enum CodingKeys: CodingKey {
         case bestDistance, bestPace, totalWorkouts, achievements, personalRecords, weeklyStats
         case achievedShortTermDistance, achievedMediumTermDistance, achievedTargetPace
+        case bestZone2Distance, bestZone2Duration, bestZone2Consistency
     }
     
     init(initialGoals: RunningGoals) {
-        // 초기화
+        // 초기화 - RunningGoals 받도록 수정
     }
     
     required init(from decoder: Decoder) throws {
@@ -130,6 +126,11 @@ class ProgressTracker: ObservableObject, Codable {
         achievedShortTermDistance = try container.decode(Bool.self, forKey: .achievedShortTermDistance)
         achievedMediumTermDistance = try container.decode(Bool.self, forKey: .achievedMediumTermDistance)
         achievedTargetPace = try container.decode(Bool.self, forKey: .achievedTargetPace)
+        
+        // Zone 2 특화 필드들 (기본값 제공)
+        bestZone2Distance = try container.decodeIfPresent(Double.self, forKey: .bestZone2Distance) ?? 0
+        bestZone2Duration = try container.decodeIfPresent(Double.self, forKey: .bestZone2Duration) ?? 0
+        bestZone2Consistency = try container.decodeIfPresent(Double.self, forKey: .bestZone2Consistency) ?? 0
     }
     
     func encode(to encoder: Encoder) throws {
@@ -143,10 +144,13 @@ class ProgressTracker: ObservableObject, Codable {
         try container.encode(achievedShortTermDistance, forKey: .achievedShortTermDistance)
         try container.encode(achievedMediumTermDistance, forKey: .achievedMediumTermDistance)
         try container.encode(achievedTargetPace, forKey: .achievedTargetPace)
+        try container.encode(bestZone2Distance, forKey: .bestZone2Distance)
+        try container.encode(bestZone2Duration, forKey: .bestZone2Duration)
+        try container.encode(bestZone2Consistency, forKey: .bestZone2Consistency)
     }
     
+    // MARK: - 진행상황 업데이트
     func updateWeeklyProgress(_ workout: WorkoutSummary) {
-        // 주간 통계 업데이트 로직
         let calendar = Calendar.current
         let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
         
@@ -160,28 +164,5 @@ class ProgressTracker: ObservableObject, Codable {
     }
 }
 
-// MARK: - 다음 목표 정보
-struct NextGoalInfo {
-    let title: String
-    let targetDistance: Double
-    let color: Color
-}
 
-// MARK: - 운동 추천
-struct WorkoutRecommendation {
-    let title: String
-    let description: String
-    let icon: String
-    let color: Color
-    let targetDistance: Double?
-    let targetPace: Double?
-    
-    init(title: String, description: String, icon: String, color: Color, targetDistance: Double? = nil, targetPace: Double? = nil) {
-        self.title = title
-        self.description = description
-        self.icon = icon
-        self.color = color
-        self.targetDistance = targetDistance
-        self.targetPace = targetPace
-    }
-}
+

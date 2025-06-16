@@ -1,5 +1,13 @@
 //
 //  AssessmentView.swift
+//  running_app
+//
+//  Created by 전진하 on 6/16/25.
+//
+
+
+//
+//  AssessmentView.swift
 //  running_app Watch App
 //
 //  Zone 2 평가 화면

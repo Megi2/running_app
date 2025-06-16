@@ -1,10 +1,3 @@
-//
-//  WatchConnectivityManager.swift
-//  running_app
-//
-//  워치와 핸드폰 간 통신을 관리하는 매니저
-//
-
 import Foundation
 import WatchConnectivity
 

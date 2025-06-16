@@ -2,7 +2,7 @@
 //  SampleDataGenerator.swift
 //  running_app
 //
-//  Zone 2 평가 시스템에 맞춰 수정된 샘플 데이터 생성기
+//  샘플 데이터 생성기 (수정된 버전)
 //
 
 import Foundation
@@ -127,97 +127,59 @@ class SampleDataGenerator {
         ]
     }
     
-    // MARK: - Zone 2 평가 결과 생성
-    func generateZone2CapacityScore() -> Zone2CapacityScore {
-        return Zone2CapacityScore(
-            totalScore: 65.0,           // 중급 수준 점수
-            distanceScore: 60.0,        // 거리 지속력
-            timeScore: 70.0,            // 시간 지속력
-            consistencyScore: 75.0,     // Zone 2 일관성
-            efficiencyScore: 55.0       // 유산소 효율성
-        )
-    }
-    
-    func generateZone2Profile() -> Zone2Profile {
-        return Zone2Profile(
-            zone2Range: 135...155,              // 25세 여성 Zone 2 범위
-            maxSustainableDistance: 1.02,      // 평가에서 달린 거리
-            maxSustainableTime: 480,           // 8분
-            averageZone2Pace: 470,             // 7분 50초/km
-            zone2TimePercentage: 78.0,         // 78% Zone 2 유지
-            zone2Efficiency: 0.45,             // 효율성 지수
-            assessmentDate: Calendar.current.date(byAdding: .day, value: -60, to: Date())!
-        )
-    }
-    
-    func generateZone2Goals() -> Zone2Goals {
-        return Zone2Goals(
-            shortTermDistance: 2.5,     // 단기: 2.5km
-            mediumTermDistance: 4.0,    // 중기: 4km
-            longTermDistance: 6.5,      // 장기: 6.5km
-            targetPace: 420,            // 7분/km
-            improvementPace: 390,       // 6분 30초/km
-            weeklyGoal: Zone2WeeklyGoal(
+    func generateCurrentGoals() -> RunningGoals {
+        return RunningGoals(
+            shortTermDistance: 4.0,
+            mediumTermDistance: 5.0,
+            longTermDistance: 7.5,
+            targetPace: 400, // 6분 40초/km
+            improvementPace: 380,
+            weeklyGoal: WeeklyGoal(
                 runs: 3,
-                totalDistance: 6.0,
+                totalDistance: 8.0,
                 averagePace: 420
             ),
+            fitnessLevel: FitnessLevel(score: 65, date: Calendar.current.date(byAdding: .day, value: -60, to: Date())!),
             assessmentDate: Calendar.current.date(byAdding: .day, value: -60, to: Date())!
         )
     }
     
-    func generateZone2ProgressTracker() -> Zone2ProgressTracker {
-        let goals = generateZone2Goals()
-        let tracker = Zone2ProgressTracker(initialGoals: goals)
-        
-        // 현재 기록 설정
+    func generateProgressTracker() -> ProgressTracker {
+        let tracker = ProgressTracker(initialGoals: generateCurrentGoals())
         tracker.bestDistance = 3.0
         tracker.bestPace = 420
         tracker.totalWorkouts = 9
-        tracker.achievedShortTermDistance = true  // 2.5km 달성
-        tracker.achievedMediumTermDistance = false // 4km 미달성
+        tracker.achievedShortTermDistance = true
+        tracker.achievedMediumTermDistance = false
         tracker.achievedTargetPace = false
         
-        // Zone 2 특화 기록
-        tracker.bestZone2Distance = 2.7
-        tracker.bestZone2Duration = 1140  // 19분
-        tracker.bestZone2Consistency = 82.5  // 82.5% 유지율
-        
-        // 성취 기록
         tracker.achievements = [
-            Zone2Achievement(
+            Achievement(
                 title: "첫 목표 달성!",
                 description: "2.0km 완주 성공",
                 date: Calendar.current.date(byAdding: .day, value: -38, to: Date())!,
                 type: .distance
             ),
-            Zone2Achievement(
-                title: "Zone 2 마스터",
-                description: "80% 이상 Zone 2 유지",
-                date: Calendar.current.date(byAdding: .day, value: -21, to: Date())!,
-                type: .zone2
+            Achievement(
+                title: "체력 향상!",
+                description: "점수: 65/100",
+                date: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
+                type: .improvement
             )
         ]
         
-        // 개인 기록
         tracker.personalRecords = [
-            Zone2PersonalRecord(
+            PersonalRecord(
                 type: .distance,
                 value: 3.0,
                 date: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
                 description: "신기록: 3.00km"
             ),
-            Zone2PersonalRecord(
+            PersonalRecord(
                 type: .pace,
                 value: 420,
                 date: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
                 description: "신기록: 7:00"
-            ),
-            Zone2PersonalRecord(
-                type: .zone2Distance,
-                value: 2.7,
-                date: Calendar.current.date(byAdding: .day, value: -21, to: Date())!,
-                description: "Zone 2 최장거리: 2.70km"
             )
         ]
         
@@ -239,10 +201,10 @@ class SampleDataGenerator {
             let fatigueFactor = progress * 30
             let pace = basePace + paceVariation + fatigueFactor
             
-            // Zone 2 범위 심박수 (135-155)
-            let baseHR = 145.0  // Zone 2 중간값
-            let hrVariation = sin(Double(i) * 0.01) * 8 + Double.random(in: -5...5)
-            let heartRate = baseHR + hrVariation
+            let baseHR = 155.0
+            let hrIncrease = progress * 15
+            let hrVariation = Double.random(in: -5...5)
+            let heartRate = baseHR + hrIncrease + hrVariation
             
             let baseCadence = 160.0
             let cadenceVariation = Double.random(in: -8...8)
@@ -333,7 +295,7 @@ class SampleDataGenerator {
     // MARK: - 메인 로딩 함수
     
     func loadSampleData() {
-        print("🔄 Zone 2 샘플 데이터 로딩 시작...")
+        print("🔄 샘플 데이터 로딩 시작...")
         
         // 1. 사용자 프로필 설정
         let profileManager = UserProfileManager.shared
@@ -341,15 +303,14 @@ class SampleDataGenerator {
         profileManager.isProfileCompleted = true
         print("✅ 사용자 프로필 로딩 완료")
         
-        // 2. Zone 2 체력 평가 매니저 설정
+        // 2. 체력 평가 매니저 설정
         let assessmentManager = FitnessAssessmentManager.shared
         assessmentManager.hasCompletedAssessment = true
-        assessmentManager.zone2CapacityScore = generateZone2CapacityScore()
-        assessmentManager.recommendedGoals = generateZone2Goals()
+        assessmentManager.currentFitnessLevel = FitnessLevel(score: 65, date: Calendar.current.date(byAdding: .day, value: -60, to: Date())!)
+        assessmentManager.recommendedGoals = generateCurrentGoals()
         assessmentManager.assessmentWorkout = generateAssessmentWorkout()
-        assessmentManager.zone2Profile = generateZone2Profile()
-        assessmentManager.progressTracker = generateZone2ProgressTracker()
-        print("✅ Zone 2 평가 데이터 로딩 완료")
+        assessmentManager.progressTracker = generateProgressTracker()
+        print("✅ 체력 평가 데이터 로딩 완료")
         
         // 3. 운동 기록들 Core Data에 저장
         let coreDataManager = CoreDataManager.shared
@@ -363,6 +324,6 @@ class SampleDataGenerator {
         }
         print("✅ 운동 기록 저장 완료: 9개 워크아웃")
         
-        print("🎉 Zone 2 샘플 데이터 로딩 완료: 25세 여성 초보 → 중급자 성장 스토리")
+        print("🎉 샘플 데이터 로딩 완료: 25세 여성 초보 러너 → 중급자 성장 스토리")
     }
 }

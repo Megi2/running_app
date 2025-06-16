@@ -3,265 +3,53 @@ import CoreMotion
 
 struct ContentView: View {
     @StateObject private var workoutManager = WorkoutManager()
+    @StateObject private var assessmentManager = AssessmentModeManager.shared
     
     var body: some View {
-        NavigationView {
-            Group {
-                if workoutManager.showAssessmentMode {
-                    // 평가 모드 화면
-                    AssessmentModeView()
-                        .environmentObject(workoutManager)
-                } else {
-                    // 일반 달리기 화면
-                    RunningView()
-                        .environmentObject(workoutManager)
-                }
+        Group {
+            if assessmentManager.showAssessmentScreen {
+                // 평가 모드 화면
+                AssessmentView()
+                    .environmentObject(workoutManager)
+            } else {
+                // 일반 러닝 화면
+                MainRunningView()
+                    .environmentObject(workoutManager)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AssessmentModeStarted"))) { _ in
+            print("📊 평가 모드 시작 알림 수신")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AssessmentModeEnded"))) { _ in
+            print("📊 평가 모드 종료 알림 수신")
         }
     }
 }
 
-// MARK: - 평가 모드 화면
-struct AssessmentModeView: View {
+struct MainRunningView: View {
     @EnvironmentObject var workoutManager: WorkoutManager
     @State private var isRunning = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 15) {
-                // 평가 모드 헤더
-                VStack(spacing: 8) {
-                    Image(systemName: "heart.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.red)
-                    
-                    Text("Zone 2 평가")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                    
-                    Text("최대한 오래 달려주세요")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+        TabView {
+            // 메인 달리기 화면
+            RunningView()
+                .environmentObject(workoutManager)
+                .tabItem {
+                    Image(systemName: "figure.run")
+                    Text("달리기")
                 }
-                .padding(.bottom, 10)
-                
-                if !isRunning {
-                    // 평가 시작 버튼
-                    Button(action: {
-                        startAssessmentWorkout()
-                    }) {
-                        VStack(spacing: 8) {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 35))
-                            Text("평가 시작")
-                                .font(.headline)
-                        }
-                        .foregroundColor(.red)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(10)
-                    
-                    // 평가 안내
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("평가 방법:")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                        
-                        Text("• 편안한 속도로 시작")
-                        Text("• Zone 2 심박수 유지")
-                        Text("• 최대한 오래 달리기")
-                        Text("• 힘들면 속도 조절")
-                    }
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(8)
-                } else {
-                    // 평가 운동 중 화면
-                    AssessmentWorkoutDataView()
-                        .environmentObject(workoutManager)
-                    
-                    // 평가 완료 버튼
-                    Button(action: {
-                        stopAssessmentWorkout()
-                    }) {
-                        VStack(spacing: 6) {
-                            Image(systemName: "stop.circle.fill")
-                                .font(.system(size: 30))
-                            Text("평가 완료")
-                                .font(.caption)
-                        }
-                        .foregroundColor(.red)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(10)
+            
+            // 설정 화면
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gear")
+                    Text("설정")
                 }
-            }
-            .padding()
         }
-        .navigationTitle("Zone 2 평가")
-        .onReceive(workoutManager.$isActive) { active in
-            isRunning = active
-        }
-    }
-    
-    private func startAssessmentWorkout() {
-        workoutManager.startAssessmentWorkout()
-    }
-    
-    private func stopAssessmentWorkout() {
-        workoutManager.endWorkout()
     }
 }
 
-// MARK: - 평가 운동 중 데이터 화면
-struct AssessmentWorkoutDataView: View {
-    @EnvironmentObject var workoutManager: WorkoutManager
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            // 경고 메시지 (평가 모드에서는 간소화)
-            if workoutManager.isWarningActive {
-                VStack {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
-                            .font(.caption)
-                        Text("주의")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.orange)
-                    }
-                    
-                    Text("페이스를 조절하세요")
-                        .font(.caption2)
-                        .foregroundColor(.orange)
-                }
-                .padding(6)
-                .background(Color.orange.opacity(0.2))
-                .cornerRadius(6)
-            }
-            
-            // 상단: 시간과 거리
-            HStack {
-                VStack {
-                    Text(timeString(from: workoutManager.elapsedTime))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    Text("시간")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                
-                VStack {
-                    Text(String(format: "%.2f", workoutManager.distance))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                    Text("km")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.bottom, 6)
-            
-            // 중단: 페이스와 심박수
-            HStack {
-                VStack {
-                    Text(paceString(from: workoutManager.currentPace))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
-                    Text("페이스")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                
-                VStack {
-                    Text("\(Int(workoutManager.heartRate))")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.red)
-                    Text("bpm")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.bottom, 6)
-            
-            // 하단: 케이던스와 칼로리
-            HStack {
-                VStack {
-                    Text("\(Int(workoutManager.cadence))")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.orange)
-                    Text("spm")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                
-                VStack {
-                    Text("\(Int(workoutManager.currentCalories))")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.purple)
-                    Text("cal")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            
-            // 평가 진행 상태
-            VStack(spacing: 4) {
-                Text("Zone 2 평가 진행 중")
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .foregroundColor(.red)
-                
-                Text("편안한 속도로 최대한 오래 달려주세요")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.top, 4)
-        }
-        .padding(8)
-        .background(Color.red.opacity(0.05))
-        .cornerRadius(8)
-    }
-    
-    private func timeString(from timeInterval: TimeInterval) -> String {
-        let minutes = Int(timeInterval) / 60
-        let seconds = Int(timeInterval) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
-    
-    private func paceString(from pace: Double) -> String {
-        if pace == 0 { return "--:--" }
-        let minutes = Int(pace) / 60
-        let seconds = Int(pace) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-}
-
-// MARK: - 일반 달리기 화면
 struct RunningView: View {
     @EnvironmentObject var workoutManager: WorkoutManager
     @State private var isRunning = false
@@ -328,7 +116,6 @@ struct RunningView: View {
     }
 }
 
-// MARK: - 일반 운동 데이터 화면
 struct WorkoutDataView: View {
     @EnvironmentObject var workoutManager: WorkoutManager
     
@@ -468,7 +255,6 @@ struct WorkoutDataView: View {
     }
 }
 
-// MARK: - 설정 화면
 struct SettingsView: View {
     var body: some View {
         List {
@@ -510,7 +296,19 @@ struct SettingsView: View {
                         .font(.caption)
                 }
             }
+            
+            Section("연결 상태") {
+                Button("연결 상태 확인") {
+                    if let workoutManager = WorkoutManager() as? WorkoutManager {
+                        workoutManager.checkConnectivityStatus()
+                    }
+                }
+            }
         }
         .navigationTitle("설정")
     }
+}
+
+#Preview {
+    ContentView()
 }
