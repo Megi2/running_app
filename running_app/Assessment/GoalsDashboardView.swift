@@ -16,7 +16,7 @@ struct GoalsDashboardView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 20) {
                     if assessmentManager.hasCompletedAssessment {
                         // 평가 완료된 경우 - 목표 대시보드 표시

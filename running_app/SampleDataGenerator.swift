@@ -2,7 +2,7 @@
 //  SampleDataGenerator.swift
 //  running_app
 //
-//  Zone 2 평가 시스템에 맞춰 수정된 샘플 데이터 생성기
+//  Zone 2 평가 시스템에 맞춰 수정된 샘플 데이터 생성기 (타입 오류 수정됨)
 //
 
 import Foundation
@@ -127,7 +127,7 @@ class SampleDataGenerator {
         ]
     }
     
-    // MARK: - Zone 2 평가 결과 생성
+    // MARK: - Zone 2 평가 결과 생성 (Zone2 타입 사용)
     func generateZone2CapacityScore() -> Zone2CapacityScore {
         return Zone2CapacityScore(
             totalScore: 65.0,           // 중급 수준 점수
@@ -330,7 +330,7 @@ class SampleDataGenerator {
         return dataPoints
     }
     
-    // MARK: - 메인 로딩 함수
+    // MARK: - 메인 로딩 함수 (수정됨 - 올바른 타입 사용)
     
     func loadSampleData() {
         print("🔄 Zone 2 샘플 데이터 로딩 시작...")
@@ -341,14 +341,14 @@ class SampleDataGenerator {
         profileManager.isProfileCompleted = true
         print("✅ 사용자 프로필 로딩 완료")
         
-        // 2. Zone 2 체력 평가 매니저 설정
+        // 2. Zone 2 체력 평가 매니저 설정 (올바른 Zone2 타입 사용)
         let assessmentManager = FitnessAssessmentManager.shared
         assessmentManager.hasCompletedAssessment = true
         assessmentManager.zone2CapacityScore = generateZone2CapacityScore()
-        assessmentManager.recommendedGoals = generateZone2Goals()
+        assessmentManager.recommendedGoals = generateZone2Goals()  // Zone2Goals 타입
         assessmentManager.assessmentWorkout = generateAssessmentWorkout()
         assessmentManager.zone2Profile = generateZone2Profile()
-        assessmentManager.progressTracker = generateZone2ProgressTracker()
+        assessmentManager.progressTracker = generateZone2ProgressTracker()  // Zone2ProgressTracker 타입
         print("✅ Zone 2 평가 데이터 로딩 완료")
         
         // 3. 운동 기록들 Core Data에 저장

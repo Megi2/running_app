@@ -2,9 +2,8 @@
 //  WorkoutDetailView.swift
 //  running_app
 //
-//  Created by 전진하 on 6/1/25.
+//  수정된 워크아웃 상세 뷰 - 환경 객체 전달 수정
 //
-
 
 import SwiftUI
 
@@ -18,7 +17,7 @@ struct WorkoutDetailView: View {
                 // 기본 정보
                 WorkoutSummaryCard(workout: workout)
                 
-                // 로컬 분석 결과
+                // 로컬 분석 결과 - 환경 객체 올바르게 전달
                 LocalAnalysisView(workout: workout)
                     .environmentObject(dataManager)
                 

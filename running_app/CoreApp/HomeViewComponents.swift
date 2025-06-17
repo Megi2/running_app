@@ -1,4 +1,12 @@
+//
+//  HomeViewComponents.swift
+//  running_app
+//
+//  Zone2 타입으로 완전히 수정된 HomeView 컴포넌트들
+//
+
 import SwiftUI
+import Foundation
 
 // MARK: - 현재 목표 진행상황 (평가 완료된 경우)
 struct CurrentGoalProgressView: View {
@@ -6,8 +14,8 @@ struct CurrentGoalProgressView: View {
     @EnvironmentObject var dataManager: RunningDataManager
     
     var body: some View {
-        if let goals = assessmentManager.recommendedGoals,
-           let tracker = assessmentManager.progressTracker {
+        if let goals = assessmentManager.recommendedGoals,  // Zone2Goals 타입
+           let tracker = assessmentManager.progressTracker { // Zone2ProgressTracker 타입
             
             let nextGoal = getNextGoal(goals: goals, tracker: tracker)
             VStack(alignment: .leading, spacing: 16) {
@@ -78,7 +86,8 @@ struct CurrentGoalProgressView: View {
         }
     }
     
-    private func getNextGoal(goals: RunningGoals, tracker: ProgressTracker) -> NextGoalInfo {
+    // Zone2Goals와 Zone2ProgressTracker를 사용하도록 수정
+    private func getNextGoal(goals: Zone2Goals, tracker: Zone2ProgressTracker) -> NextGoalInfo {
         if !tracker.achievedShortTermDistance {
             return NextGoalInfo(title: "단기 목표", targetDistance: goals.shortTermDistance, color: .green)
         } else if !tracker.achievedMediumTermDistance {
@@ -104,7 +113,7 @@ struct BasicGoalProgressView: View {
                     Text("최고 기록")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text(String(format: "%.2f km", dataManager.bestDistance))
+                    Text(String(format: "%.2f km", $dataManager.bestDistance as! CVarArg))
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundColor(.blue)
@@ -207,10 +216,10 @@ struct TodaysWorkoutRecommendationView: View {
         // 마지막 운동으로부터 경과된 시간
         let daysSinceLastWorkout = getDaysSinceLastWorkout()
         
-        // 평가 완료 여부에 따른 추천
+        // 평가 완료 여부에 따른 추천 (Zone2Goals와 Zone2ProgressTracker 사용)
         if assessmentManager.hasCompletedAssessment,
-           let goals = assessmentManager.recommendedGoals,
-           let tracker = assessmentManager.progressTracker {
+           let goals = assessmentManager.recommendedGoals,      // Zone2Goals
+           let tracker = assessmentManager.progressTracker {   // Zone2ProgressTracker
             
             // 주간 운동량 체크
             let weeklyStats = dataManager.getWeeklyStats()
@@ -270,7 +279,7 @@ struct TodaysWorkoutRecommendationView: View {
                     description: "자신의 페이스로 편안하게 달려보세요",
                     icon: "figure.run",
                     color: .blue,
-                    targetDistance: min(5.0, dataManager.bestDistance + 0.5),
+                    targetDistance: min(5.0, $dataManager.bestDistance + 0.5),
                     targetPace: 360 // 6분/km
                 )
             }
@@ -397,7 +406,7 @@ struct WeeklyStatsView: View {
 
 // MARK: - 동기부여 메시지
 struct MotivationalMessageView: View {
-    let tracker: ProgressTracker
+    let tracker: Zone2ProgressTracker  // Zone2ProgressTracker 타입으로 변경
     
     var body: some View {
         let message = generateMotivationalMessage()
@@ -473,5 +482,29 @@ struct MetricView: View {
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+struct NextGoalInfo {
+    let title: String
+    let targetDistance: Double
+    let color: Color
+}
+
+// MARK: - 운동 추천 정보 (이 파일 내에서 정의)
+struct WorkoutRecommendation {
+    let title: String
+    let description: String
+    let icon: String
+    let color: Color
+    let targetDistance: Double?
+    let targetPace: Double?
+    
+    init(title: String, description: String, icon: String, color: Color, targetDistance: Double? = nil, targetPace: Double? = nil) {
+        self.title = title
+        self.description = description
+        self.icon = icon
+        self.color = color
+        self.targetDistance = targetDistance
+        self.targetPace = targetPace
     }
 }

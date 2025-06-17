@@ -2,7 +2,7 @@
 //  FitnessAssessmentManager.swift
 //  running_app
 //
-//  Zone 2 최대 지속 능력 평가 및 목표 설정 매니저 (중복 제거됨)
+//  Zone 2 최대 지속 능력 평가 및 목표 설정 매니저 (완전 수정됨)
 //
 
 import Foundation
@@ -12,6 +12,7 @@ import SwiftUI
 class FitnessAssessmentManager: ObservableObject {
     static let shared = FitnessAssessmentManager()
     
+    // Zone2 타입으로 완전히 통일
     @Published var hasCompletedAssessment: Bool = false
     @Published var zone2CapacityScore: Zone2CapacityScore?
     @Published var recommendedGoals: Zone2Goals?
@@ -43,7 +44,11 @@ class FitnessAssessmentManager: ObservableObject {
         // Zone 2 최적화 목표 생성
         recommendedGoals = generateZone2Goals(from: workout)
         
-        progressTracker = Zone2ProgressTracker(initialGoals: recommendedGoals!)
+        // Zone2ProgressTracker 생성 (올바른 타입 사용)
+        if let goals = recommendedGoals {
+            progressTracker = Zone2ProgressTracker(initialGoals: goals)
+        }
+        
         hasCompletedAssessment = true
         
         saveAssessmentData()
@@ -210,7 +215,7 @@ class FitnessAssessmentManager: ObservableObject {
     // MARK: - Zone 2 목표 생성
     private func generateZone2Goals(from workout: WorkoutSummary) -> Zone2Goals {
         guard let zone2Profile = zone2Profile else {
-            return createDefaultGoals()
+            return createDefaultZone2Goals()
         }
         
         let baseDistance = zone2Profile.maxSustainableDistance
@@ -254,7 +259,7 @@ class FitnessAssessmentManager: ObservableObject {
         return min(50.0, baseDistance * 2.5)
     }
     
-    private func createDefaultGoals() -> Zone2Goals {
+    private func createDefaultZone2Goals() -> Zone2Goals {
         return Zone2Goals(
             shortTermDistance: 3.0,
             mediumTermDistance: 5.0,

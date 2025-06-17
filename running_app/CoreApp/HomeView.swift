@@ -55,7 +55,9 @@ struct HomeView: View {
         .navigationTitle("홈")
         .refreshable {
             // 당겨서 새로고침
-            dataManager.refreshData()
+            await MainActor.run {
+                dataManager.refreshData()
+                }
         }
         .sheet(isPresented: $assessmentCoordinator.showingAssessmentResult) {
             if let result = assessmentCoordinator.assessmentResult {

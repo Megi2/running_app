@@ -1,13 +1,21 @@
+//
+//  ContentView.swift
+//  running_app Watch App
+//
+//  수정된 워치 앱 메인 화면 - 타입 에러 해결
+//
+
 import SwiftUI
 import CoreMotion
 
 struct ContentView: View {
     @StateObject private var workoutManager = WorkoutManager()
+    @StateObject private var assessmentManager = AssessmentModeManager.shared
     
     var body: some View {
         NavigationView {
             Group {
-                if workoutManager.showAssessmentMode {
+                if assessmentManager.showAssessmentScreen {
                     // 평가 모드 화면
                     AssessmentModeView()
                         .environmentObject(workoutManager)
@@ -18,13 +26,16 @@ struct ContentView: View {
                 }
             }
         }
+        .onReceive(assessmentManager.$showAssessmentScreen) { showingAssessment in
+            print("⌚ 평가 화면 표시 상태: \(showingAssessment)")
+        }
     }
 }
 
 // MARK: - 평가 모드 화면
 struct AssessmentModeView: View {
     @EnvironmentObject var workoutManager: WorkoutManager
-    @State private var isRunning = false
+    @StateObject private var assessmentManager = AssessmentModeManager.shared
     
     var body: some View {
         ScrollView {
@@ -46,7 +57,7 @@ struct AssessmentModeView: View {
                 }
                 .padding(.bottom, 10)
                 
-                if !isRunning {
+                if !workoutManager.isWorkoutActive {
                     // 평가 시작 버튼
                     Button(action: {
                         startAssessmentWorkout()
@@ -109,17 +120,14 @@ struct AssessmentModeView: View {
             .padding()
         }
         .navigationTitle("Zone 2 평가")
-        .onReceive(workoutManager.$isActive) { active in
-            isRunning = active
-        }
     }
     
     private func startAssessmentWorkout() {
-        workoutManager.startAssessmentWorkout()
+        workoutManager.startWorkout(isAssessment: true)
     }
     
     private func stopAssessmentWorkout() {
-        workoutManager.endWorkout()
+        workoutManager.stopWorkout()
     }
 }
 
@@ -264,12 +272,11 @@ struct AssessmentWorkoutDataView: View {
 // MARK: - 일반 달리기 화면
 struct RunningView: View {
     @EnvironmentObject var workoutManager: WorkoutManager
-    @State private var isRunning = false
     
     var body: some View {
         ScrollView {
             VStack(spacing: 15) {
-                if !isRunning {
+                if !workoutManager.isWorkoutActive {
                     // 시작 버튼
                     Button(action: {
                         startWorkout()
@@ -314,9 +321,6 @@ struct RunningView: View {
             .padding()
         }
         .navigationTitle("10km 달리기")
-        .onReceive(workoutManager.$isActive) { active in
-            isRunning = active
-        }
     }
     
     private func startWorkout() {
@@ -324,7 +328,7 @@ struct RunningView: View {
     }
     
     private func stopWorkout() {
-        workoutManager.endWorkout()
+        workoutManager.stopWorkout()
     }
 }
 
@@ -465,52 +469,5 @@ struct WorkoutDataView: View {
         let minutes = Int(pace) / 60
         let seconds = Int(pace) % 60
         return String(format: "%d:%02d", minutes, seconds)
-    }
-}
-
-// MARK: - 설정 화면
-struct SettingsView: View {
-    var body: some View {
-        List {
-            Section("목표 설정") {
-                HStack {
-                    Text("목표 거리")
-                    Spacer()
-                    Text("10km")
-                        .foregroundColor(.secondary)
-                }
-                
-                HStack {
-                    Text("목표 페이스")
-                    Spacer()
-                    Text("6:00/km")
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Section("알림") {
-                Toggle("페이스 경고", isOn: .constant(true))
-                Toggle("심박수 알림", isOn: .constant(true))
-            }
-            
-            Section("센서") {
-                HStack {
-                    Text("CMPedometer")
-                    Spacer()
-                    Text(CMPedometer.isStepCountingAvailable() ? "사용 가능" : "사용 불가")
-                        .foregroundColor(CMPedometer.isStepCountingAvailable() ? .green : .red)
-                        .font(.caption)
-                }
-                
-                HStack {
-                    Text("가속도계")
-                    Spacer()
-                    Text("활성화됨")
-                        .foregroundColor(.green)
-                        .font(.caption)
-                }
-            }
-        }
-        .navigationTitle("설정")
     }
 }

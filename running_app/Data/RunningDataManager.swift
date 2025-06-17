@@ -323,4 +323,20 @@ class RunningDataManager: NSObject, ObservableObject, WatchDataDelegate {
             }
         }
     }
+    func refreshData() {
+        print("🔄 데이터 새로고침 시작")
+        
+        DispatchQueue.main.async {
+            self.isLoading = true
+            self.errorMessage = nil
+        }
+        
+        // 워크아웃 다시 로드
+        loadWorkouts()
+        
+        DispatchQueue.main.async {
+            self.isLoading = false
+            print("✅ 데이터 새로고침 완료: \(self.workouts.count)개 워크아웃")
+        }
+    }
 }

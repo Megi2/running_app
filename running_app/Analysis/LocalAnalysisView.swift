@@ -2,9 +2,8 @@
 //  LocalAnalysisView.swift
 //  running_app
 //
-//  Created by 전진하 on 6/1/25.
+//  수정된 로컬 분석 뷰 - 바인딩 에러 해결
 //
-
 
 import SwiftUI
 
@@ -14,11 +13,11 @@ struct LocalAnalysisView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("AI 분석 결과")
+            Text("분석 결과")
                 .font(.headline)
                 .fontWeight(.bold)
             
-            let analysisResult = dataManager.analyzeWorkout(workout)
+            let analysisResult = getAnalysisResult()
             
             VStack(spacing: 12) {
                 // 페이스 안정성
@@ -55,6 +54,29 @@ struct LocalAnalysisView: View {
         .padding()
         .background(Color.purple.opacity(0.1))
         .cornerRadius(12)
+    }
+    
+    // MARK: - Private 함수들
+    private func getAnalysisResult() -> WorkoutAnalysisResult {
+        let analysisEngine = LocalAnalysisEngine()
+        
+        let paces = workout.dataPoints.compactMap { $0.pace > 0 ? $0.pace : nil }
+        let heartRates = workout.dataPoints.compactMap { $0.heartRate > 0 ? $0.heartRate : nil }
+        let cadences = workout.dataPoints.compactMap { $0.cadence > 0 ? $0.cadence : nil }
+        
+        let paceStability = analysisEngine.analyzePaceStability(paces: paces)
+        let efficiency = analysisEngine.analyzeEfficiency(paces: paces, heartRates: heartRates)
+        let cadenceOptimization = analysisEngine.optimizeCadence(
+            paces: paces,
+            cadences: cadences,
+            heartRates: heartRates
+        )
+        
+        return WorkoutAnalysisResult(
+            paceStability: paceStability,
+            efficiency: efficiency,
+            cadenceOptimization: cadenceOptimization
+        )
     }
     
     private func getStabilityStatus(_ level: StabilityLevel) -> String {
@@ -108,8 +130,8 @@ struct AnalysisCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundColor(color)
                     .font(.title3)
+                    .foregroundColor(color)
                 
                 VStack(alignment: .leading) {
                     Text(title)

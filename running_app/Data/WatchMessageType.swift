@@ -20,6 +20,7 @@ enum CommunicationResult {
 
 // MARK: - 통신 전담 매니저
 class WatchDataCommunicator: NSObject, ObservableObject {
+    
     static let shared = WatchDataCommunicator()
     
     // MARK: - Published Properties

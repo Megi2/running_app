@@ -1,7 +1,14 @@
+//
+//  FitnessAssessmentDataModels.swift
+//  running_app
+//
+//  Running 타입 정의 (Zone2와 분리)
+//
+
 import Foundation
 import SwiftUI
 
-// MARK: - 체력 수준 (점수 기반)
+// MARK: - 체력 수준
 struct FitnessLevel: Codable {
     let score: Double  // 0-100 점수
     let date: Date
@@ -78,7 +85,6 @@ enum AchievementType: String, Codable {
     case level = "등급"
     case consistency = "꾸준함"
     case improvement = "개선"
-    case zone2 = "Zone 2"
 }
 
 // MARK: - 개인 기록
@@ -103,7 +109,7 @@ class ProgressTracker: ObservableObject, Codable {
     @Published var totalWorkouts: Int = 0
     @Published var achievements: [Achievement] = []
     @Published var personalRecords: [PersonalRecord] = []
-    @Published var weeklyStats: WeeklyStats = WeeklyStats(totalDistance: 0, workoutCount: 0, averageEfficiency: 0)
+    @Published var weeklyStats: WeeklyStats = WeeklyStats()
     
     // 목표 달성 상태
     @Published var achievedShortTermDistance: Bool = false
@@ -151,37 +157,38 @@ class ProgressTracker: ObservableObject, Codable {
         let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
         
         if workout.date >= weekAgo {
-            weeklyStats = WeeklyStats(
-                totalDistance: weeklyStats.totalDistance + workout.distance,
-                workoutCount: weeklyStats.workoutCount + 1,
-                averageEfficiency: weeklyStats.averageEfficiency // 별도 계산 필요
-            )
+            let efficiency = workout.averageHeartRate > 0 && workout.averagePace > 0 ?
+                (3600 / workout.averagePace) / workout.averageHeartRate : 0
+            weeklyStats.addWorkout(distance: workout.distance, efficiency: efficiency)
         }
+        
+        // 개인 기록 업데이트
+        if workout.distance > bestDistance {
+            bestDistance = workout.distance
+            personalRecords.append(PersonalRecord(
+                type: .distance,
+                value: workout.distance,
+                date: workout.date,
+                description: "신기록: \(String(format: "%.2f", workout.distance))km"
+            ))
+        }
+        
+        if workout.averagePace < bestPace && workout.averagePace > 0 {
+            bestPace = workout.averagePace
+            personalRecords.append(PersonalRecord(
+                type: .pace,
+                value: workout.averagePace,
+                date: workout.date,
+                description: "신기록: \(paceString(from: workout.averagePace))"
+            ))
+        }
+        
+        totalWorkouts += 1
     }
-}
-
-// MARK: - 다음 목표 정보
-struct NextGoalInfo {
-    let title: String
-    let targetDistance: Double
-    let color: Color
-}
-
-// MARK: - 운동 추천
-struct WorkoutRecommendation {
-    let title: String
-    let description: String
-    let icon: String
-    let color: Color
-    let targetDistance: Double?
-    let targetPace: Double?
     
-    init(title: String, description: String, icon: String, color: Color, targetDistance: Double? = nil, targetPace: Double? = nil) {
-        self.title = title
-        self.description = description
-        self.icon = icon
-        self.color = color
-        self.targetDistance = targetDistance
-        self.targetPace = targetPace
+    private func paceString(from pace: Double) -> String {
+        let minutes = Int(pace) / 60
+        let seconds = Int(pace) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 }
