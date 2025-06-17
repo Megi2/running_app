@@ -73,6 +73,30 @@
 		60D823B12DEC252C002B05DD /* RunningDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = RunningDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		60D73F802E01948E009A739C /* Exceptions for "running_app Watch App" folder in "running_app Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"WorkoutManager+DataUtils.swift",
+				"WorkoutManager+Deligate.swift",
+				"WorkoutManger+WacthConnectivity.swift",
+			);
+			target = 6034FE882DE49326006367C3 /* running_app Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		60D73F812E01948E009A739C /* Exceptions for "running_app Watch App" folder in "Copy Bundle Resources" phase from "running_app Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 6034FE872DE49326006367C3 /* Resources */;
+			membershipExceptions = (
+				"WorkoutManager+DataUtils.swift",
+				"WorkoutManager+Deligate.swift",
+				"WorkoutManger+WacthConnectivity.swift",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6034FE762DE49326006367C3 /* running_appTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -86,6 +110,10 @@
 		};
 		6034FE8D2DE49326006367C3 /* running_app Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				60D73F802E01948E009A739C /* Exceptions for "running_app Watch App" folder in "running_app Watch App" target */,
+				60D73F812E01948E009A739C /* Exceptions for "running_app Watch App" folder in "Copy Bundle Resources" phase from "running_app Watch App" target */,
+			);
 			path = "running_app Watch App";
 			sourceTree = "<group>";
 		};

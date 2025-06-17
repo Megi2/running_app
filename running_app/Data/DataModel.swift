@@ -45,24 +45,6 @@ struct WorkoutSummary: Codable, Identifiable {
     }
 }
 
-struct RealtimeData {
-    let timestamp: TimeInterval
-    let elapsedTime: TimeInterval
-    let currentPace: Double
-    let heartRate: Double
-    let cadence: Double
-    let distance: Double
-    let currentCalories: Double
-    let recentPaces: [Double]
-    let recentCadences: [Double]
-    let recentHeartRates: [Double]
-    let isWarningActive: Bool
-    let warningMessage: String
-    
-    // 로컬 계산용 추가
-    let receivedAt: Date = Date() // 수신 시간
-}
-
 // MARK: - 분석 결과 데이터 모델들
 struct EfficiencyMetrics {
     let paceCV: Double
@@ -185,31 +167,6 @@ enum TrendDirection {
         case .declining: return .red
         case .stable: return .orange
         }
-    }
-}
-
-// MARK: - HomeView용 헬퍼 구조체들 (새로 추가)
-struct NextGoalInfo {
-    let title: String
-    let targetDistance: Double
-    let color: Color
-}
-
-struct WorkoutRecommendation {
-    let title: String
-    let description: String
-    let icon: String
-    let color: Color
-    let targetDistance: Double?
-    let targetPace: Double?
-    
-    init(title: String, description: String, icon: String, color: Color, targetDistance: Double? = nil, targetPace: Double? = nil) {
-        self.title = title
-        self.description = description
-        self.icon = icon
-        self.color = color
-        self.targetDistance = targetDistance
-        self.targetPace = targetPace
     }
 }
 
